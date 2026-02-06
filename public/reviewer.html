@@ -616,9 +616,15 @@
 // Override submitReview to use backend
 async function submitReview(){
   const action = document.querySelector('input[name="action"]:checked')?.value;
+  const comment = document.getElementById("modal-comments").value.trim();
 
   if(!action){
     alert("Select action");
+    return;
+  }
+
+  if((action==="return" || action==="reject") && !comment){
+    alert("Feedback required");
     return;
   }
 
@@ -626,14 +632,19 @@ async function submitReview(){
     await fetch("/forward/"+selectedAppId,{method:"POST"});
   }
 
-  if(action==="reject"){
-    await fetch("/reviewer-reject/"+selectedAppId,{method:"POST"});
+  if(action==="return" || action==="reject"){
+    await fetch("/reviewer-reject/"+selectedAppId,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json"},
+      body: JSON.stringify({comment})
+    });
   }
 
   alert("Processed");
   closeModal();
   loadFromServer();
 }
+
 // Override openModal for backend docs
 function openModal(id){
   selectedAppId = id;

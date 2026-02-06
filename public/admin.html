@@ -375,11 +375,24 @@ function confirmReject(){
 }
 
 async function rejectDoc(){
- await fetch("/reject/"+selectedDocId,{method:"POST"});
- alert("Rejected");
+ const comment=document.getElementById("admin-comment").value.trim();
+
+ if(!comment){
+   alert("Please enter rejection reason");
+   return;
+ }
+
+ await fetch("/reject/"+selectedDocId,{
+   method:"POST",
+   headers:{ "Content-Type":"application/json"},
+   body: JSON.stringify({comment})
+ });
+
+ alert("Rejected & sent to student");
  closeModal();
  loadFromServer();
 }
+
 
 // Override modal opener for UUID
 function openModal(id){

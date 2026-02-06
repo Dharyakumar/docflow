@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
 const { v4: uuid } = require("uuid");
+const pdfParse = require("pdf-parse");
+const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
 
@@ -9,87 +11,134 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
+
+
+/* ================= USERS ================= */
+
+let users = [
+ { id:"student", password:"1234", role:"student" },
+ { id:"reviewer", password:"1234", role:"reviewer" },
+ { id:"admin", password:"1234", role:"admin" }
+];
+
+/* ================= DOCS ================= */
 
 let documents = [];
 
-// Multer setup (stores files in uploads/)
-const upload = multer({ dest: "uploads/" });
-
-// Home page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
-});
-
-// Student upload
-app.post("/upload", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.json({ success: false });
-    }
-
-    console.log("Uploaded:", req.file.originalname);
-
-    // Simple placeholder text for AI (you can improve later)
-    const text = "This is a sample document text for grammar checking.";
-
-    const response = await axios.post(
-      "https://api.languagetool.org/v2/check",
-      new URLSearchParams({
-        text,
-        language: "en-US"
-      })
-    );
-
-    const errors = response.data.matches.length;
-    const score = Math.max(100 - errors * 5, 0);
-
-    documents.push({
-      id: uuid(),
-      name: req.file.originalname,
-      status: "submitted",
-      score,
-      errors
-    });
-
-    res.json({ success: true });
-  } catch (e) {
-    console.log(e);
-    res.json({ success: false });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
   }
 });
 
-// Get all documents
-app.get("/documents", (req, res) => {
-  res.json(documents);
+const upload = multer({ storage });
+
+
+/* ================= ROUTES ================= */
+
+app.get("/",(req,res)=>{
+ res.sendFile(path.join(__dirname,"public/index.html"));
 });
 
-// Reviewer forward
-app.post("/forward/:id", (req, res) => {
-  const d = documents.find(x => x.id === req.params.id);
-  if (d) d.status = "forwarded";
-  res.json({ success: true });
+/* ---- SIGNUP ---- */
+app.post("/signup",(req,res)=>{
+ const {id,password,role}=req.body;
+
+ if(!id||!password||!role)
+  return res.json({success:false,message:"Missing fields"});
+
+ if(users.find(u=>u.id===id))
+  return res.json({success:false,message:"User exists"});
+
+ users.push({id,password,role});
+ res.json({success:true});
 });
 
-// Reviewer reject
-app.post("/reviewer-reject/:id", (req, res) => {
-  const d = documents.find(x => x.id === req.params.id);
-  if (d) d.status = "rejected";
-  res.json({ success: true });
+/* ---- LOGIN ---- */
+app.post("/login",(req,res)=>{
+ const {id,password}=req.body;
+ const u=users.find(x=>x.id===id&&x.password===password);
+ if(!u) return res.json({success:false});
+ res.json({success:true,role:u.role});
 });
 
-// Admin approve
-app.post("/approve/:id", (req, res) => {
-  const d = documents.find(x => x.id === req.params.id);
-  if (d && d.status === "forwarded") d.status = "approved";
-  res.json({ success: true });
+/* ---- STUDENT UPLOAD ---- */
+app.post("/upload",upload.single("file"),async(req,res)=>{
+ try{
+  const data=await pdfParse(fs.readFileSync(req.file.path));
+  const text=data.text.substring(0,4000);
+
+  const r=await axios.post(
+   "https://api.languagetool.org/v2/check",
+   new URLSearchParams({text,language:"en-US"})
+  );
+
+  documents.push({
+   id:uuid(),
+   name:req.file.originalname,
+   status:"submitted",
+   errors:r.data.matches.length
+  });
+
+  res.json({success:true});
+ }catch(e){
+  console.log(e);
+  res.json({success:false});
+ }
 });
 
-// Admin reject
-app.post("/reject/:id", (req, res) => {
-  const d = documents.find(x => x.id === req.params.id);
-  if (d && d.status === "forwarded") d.status = "rejected";
-  res.json({ success: true });
+/* ---- SHARED ---- */
+app.get("/documents",(req,res)=>res.json(documents));
+
+/* ---- REVIEWER ---- */
+app.post("/forward/:id",(req,res)=>{
+ const d = documents.find(x=>x.id===req.params.id);
+ if(d){
+   d.status="forwarded";
+   d.comment = null;
+ }
+ res.json({success:true});
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on " + PORT));
+
+app.post("/reviewer-reject/:id",(req,res)=>{
+ const d = documents.find(x=>x.id===req.params.id);
+ if(d){
+   d.status = "returned";
+   d.comment = req.body.comment;
+   d.commentBy = "reviewer";
+ }
+ res.json({success:true});
+});
+
+
+/* ---- ADMIN ---- */
+app.post("/approve/:id",(req,res)=>{
+ const d=documents.find(x=>x.id===req.params.id);
+ if(d) d.status="approved";
+ res.json({success:true});
+});
+
+app.post("/reject/:id",(req,res)=>{
+ const d = documents.find(x=>x.id===req.params.id);
+ if(d){
+   d.status = "returned";
+   d.comment = req.body.comment || "Rejected by Admin";
+   d.commentBy = "admin";
+ }
+ res.json({success:true});
+});
+
+
+
+
+/* ================= START ================= */
+
+app.listen(3000,()=>console.log("Server running on 3000"));
+

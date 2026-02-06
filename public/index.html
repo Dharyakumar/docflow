@@ -432,71 +432,65 @@
     }
 
     // Handle Login Submission
-    function handleLogin(event) {
-        event.preventDefault();
-        const userId = document.getElementById('loginId').value;
-        
-        // Mock Redirects
-        if (currentContext === 'student') {
-            window.location.href = 'student.html';
-        } else if (currentContext === 'admin') {
-            window.location.href = 'admin.html';
-        } else if (currentContext === 'reviewer') {
-            window.location.href = 'reviewer.html';
-        }
-    }
+   async function handleLogin(event){
+ event.preventDefault();
+
+ const id=document.getElementById("loginId").value;
+ const password=document.querySelector("#login-view input[type=password]").value;
+
+ const res=await fetch("/login",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({id,password})
+ });
+
+ const data=await res.json();
+
+ if(!data.success){
+  alert("Invalid login");
+  return;
+ }
+
+ window.location.href=data.role+".html";
+}
+ 
 
     // Handle Forgot Password
-    function handleForgotPasswordSubmit(event) {
-        event.preventDefault();
-        // Simulate API call
-        const btn = event.target.querySelector('button');
-        const originalText = btn.textContent;
-        btn.textContent = 'Sending...';
-        btn.disabled = true;
+ async function handleSignupSubmit(event){
+ event.preventDefault();
 
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.disabled = false;
-            showToast('Reset link sent to your email!');
-            backToLogin();
-        }, 1500);
-    }
+ const role=document.getElementById("signup-role").value;
+ const email=document.querySelector('#signup-view input[type=email]').value;
+ const password=document.querySelector('#signup-view input[type=password]').value;
 
-    // Handle Signup
-    function handleSignupSubmit(event) {
-        event.preventDefault();
-        // Simulate API call
-        const role = document.getElementById('signup-role').value;
-        if(!role) {
-            alert("Please select a role.");
-            return;
-        }
+ if(!role){
+  alert("Select role");
+  return;
+ }
 
-        const btn = event.target.querySelector('button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.textContent = 'Creating Account...';
-        btn.disabled = true;
+ const res=await fetch("/signup",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+   id:email,
+   password,
+   role
+  })
+ });
 
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.disabled = false;
-            
-            // Generate a mock ID based on role
-            let newId = '';
-            if(role === 'student') newId = 'S' + Math.floor(Math.random() * 1000);
-            if(role === 'reviewer') newId = 'R' + Math.floor(Math.random() * 1000);
-            if(role === 'admin') newId = 'A' + Math.floor(Math.random() * 1000);
+ const data=await res.json();
 
-            showToast(`Account created! Your ID is ${newId}. Please login.`);
-            
-            // Set the context to the new role so login screen matches
-            currentContext = role;
-            selectRole(role); 
-            // Pre-fill the ID
-            document.getElementById('loginId').value = newId;
-        }, 1500);
-    }
+ if(!data.success){
+  alert(data.message);
+  return;
+ }
+
+ alert("Account created!");
+
+ switchView("login-view");
+ document.getElementById("loginId").value=email;
+}
+ 
 </script>
 </body>
 </html>

@@ -249,7 +249,11 @@
 
 <!-- Global Fixed Tooltip (Hidden by default) -->
 <div id="global-tooltip" class="fixed hidden bg-gray-900 text-white text-xs rounded-lg p-3 z-[100] max-w-sm shadow-xl pointer-events-none transition-opacity duration-200 opacity-0">
-    <div class="font-bold mb-1 border-b border-gray-700 pb-1 text-gray-300">Reviewer Comment:</div>
+    <div id="tooltip-title"
+     class="font-bold mb-1 border-b border-gray-700 pb-1 text-gray-300">
+    Comment:
+</div>
+
     <span id="tooltip-content" class="block whitespace-normal break-words"></span>
     <!-- Arrow (Optional cosmetic) -->
     <div class="absolute w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900 -bottom-1 left-1/2 -translate-x-1/2"></div>
@@ -346,8 +350,11 @@
 
                 commentIndicator = `
                     <div class="ml-2 align-middle inline-block">
-                        <i class="fa-solid fa-circle-info ${iconColor} hover:scale-110 transition-transform cursor-help text-lg js-tooltip-trigger"
-                           data-comment="${safeComment}"></i>
+                     <i class="fa-solid fa-circle-info ${iconColor}
+   hover:scale-110 transition-transform cursor-help text-lg js-tooltip-trigger"
+   data-comment="${safeComment}"
+   data-by="${doc.commentBy}"></i>
+   
                     </div>
                 `;
             }
@@ -508,16 +515,25 @@ async function loadFromServer(){
         type: "Uploaded PDF",
         date: new Date().toISOString().split('T')[0],
         status: x.status,
-        statusClass: x.status==="approved"
-          ? "bg-green-100 text-green-800 border-green-200"
-          : x.status==="rejected"
-          ? "bg-red-100 text-red-800 border-red-200"
+
+        statusClass:
+          x.status === "approved"
+            ? "bg-green-100 text-green-800 border-green-200"
+          : x.status === "rejected"
+            ? "bg-red-100 text-red-800 border-red-200"
+          : x.status === "returned"
+            ? "bg-red-100 text-red-800 border-red-200"
           : "bg-yellow-100 text-yellow-800 border-yellow-200",
-        comment: null
+
+        // ✅ THIS is what makes feedback appear
+        comment: x.comment,
+        commentBy: x.commentBy   // 👈 ADD THIS LINE
+
     }));
 
     renderTable();
 }
+
 
 
 
@@ -571,7 +587,12 @@ async function loadFromServer(){
             // Clear any existing hide timeout
             clearTimeout(tooltipTimeout);
 
-            tooltipContent.textContent = comment;
+            const by = e.target.getAttribute("data-by") || "System";
+document.getElementById("tooltip-title").textContent =
+  by === "admin" ? "Admin Feedback:" : "Reviewer Feedback:";
+
+tooltipContent.textContent = comment;
+
             tooltip.classList.remove('hidden');
             // Force reflow to enable transition
             void tooltip.offsetWidth;
@@ -625,6 +646,8 @@ async function loadFromServer(){
             closeProfileModal();
         }
     }
+    
+
 </script>
 </body>
 </html>

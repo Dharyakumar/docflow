@@ -23,6 +23,7 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "multer": "^2.0.2",
+    "pdf-parse": "^1.1.1",
     "pdf-text-extract": "^1.5.0",
     "uuid": "^13.0.0"
   }
