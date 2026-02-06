@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - EduFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Simple fade in animation for modals */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-xl shadow-md">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">EduFlow</h1>
+                <span class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Student Portal</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="relative cursor-pointer group">
+                <i class="fa-regular fa-bell text-gray-500 text-xl group-hover:text-indigo-600 transition-colors"></i>
+                <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            </div>
+
+            <div class="flex items-center gap-3 border-l pl-6 border-gray-200">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-semibold text-gray-900" id="nav-name">Alex Student</p>
+                    <p class="text-xs text-gray-500" id="nav-id">ID: S001</p>
+                </div>
+                <!-- Profile Trigger -->
+                <button onclick="openProfileModal()" class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm hover:ring-2 hover:ring-indigo-500 transition-all focus:outline-none">
+                    AS
+                </button>
+            </div>
+
+            <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors" title="Logout">
+                <i class="fa-solid fa-right-from-bracket text-xl"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8">
+
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">My Applications</h2>
+            <p class="text-gray-500">Track status, view reviewer comments, and upload new documents.</p>
+        </div>
+        <button onclick="openUploadModal()"
+                class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i> New Submission
+        </button>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center text-xl">
+                <i class="fa-regular fa-clock"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 font-medium">Pending</p>
+                <p class="text-2xl font-bold text-gray-900" id="stat-pending">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl">
+                <i class="fa-regular fa-circle-check"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 font-medium">Approved</p>
+                <p class="text-2xl font-bold text-gray-900" id="stat-approved">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xl">
+                <i class="fa-regular fa-circle-xmark"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 font-medium">Action Required</p>
+                <p class="text-2xl font-bold text-gray-900" id="stat-action">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4">Document Title</th>
+                    <th class="px-6 py-4">Type</th>
+                    <th class="px-6 py-4">Submitted On</th>
+                    <th class="px-6 py-4">Status & Comments</th>
+                    <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm" id="doc-table-body">
+                <!-- JS will populate this -->
+                </tbody>
+            </table>
+        </div>
+        <!-- Empty State (Hidden by default) -->
+        <div id="empty-state" class="hidden p-12 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
+                <i class="fa-regular fa-folder-open"></i>
+            </div>
+            <h3 class="text-gray-900 font-medium">No documents found</h3>
+            <p class="text-gray-500 text-sm mt-1">Upload a new document to get started.</p>
+        </div>
+    </div>
+
+</main>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="font-bold text-gray-900">Upload New Document</h3>
+            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                <select id="docType" onchange="toggleCustomDocInput()" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border outline-none">
+                    <option value="Scholarship Application">Scholarship Application</option>
+                    <option value="Internship NOC Request">Internship NOC Request</option>
+                    <option value="Admission Form">Admission Form</option>
+                    <option value="Grade Correction">Grade Correction</option>
+                    <option value="Others">Others (Specify)</option>
+                </select>
+            </div>
+
+            <!-- Hidden input for "Others" -->
+            <div id="customDocTypeContainer" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Specify Document Name <span class="text-red-500">*</span></label>
+                <input type="text" id="customDocName" placeholder="e.g., Medical Certificate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Upload File (PDF)</label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 hover:border-indigo-400 transition-all cursor-pointer group" id="drop-zone">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl text-gray-400 group-hover:text-indigo-600"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 font-medium">Click to upload or drag and drop</p>
+                    <p class="text-xs text-gray-400 mt-1">PDF only (Max 5MB)</p>
+                    <input type="file" id="fileInput" class="hidden" accept=".pdf">
+                </div>
+                <div id="file-name" class="hidden mt-3 bg-green-50 border border-green-200 rounded-lg p-2.5 flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-sm text-green-700 font-medium">
+                        <i class="fa-solid fa-file-pdf"></i> <span id="file-name-text">filename.pdf</span>
+                    </div>
+                    <button onclick="clearFile()" class="text-green-700 hover:text-green-900"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <button onclick="submitDocument()" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30">
+                Submit Application
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profile-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="font-bold text-gray-900">Student Profile</h3>
+            <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <!-- Read-Only Details -->
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-2xl font-bold border-2 border-white shadow-md">
+                        AS
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-900" id="profile-name">Alex Student</h4>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active Student
+                        </span>
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 space-y-2 border border-gray-100">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Institute ID</span>
+                        <span class="font-medium text-gray-900" id="profile-id">S001</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Email</span>
+                        <span class="font-medium text-gray-900" id="profile-email">alex.student@institute.edu</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Department</span>
+                        <span class="font-medium text-gray-900">Computer Science</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Section -->
+            <div class="border-t border-gray-100 pt-4">
+                <h4 class="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-gray-400"></i> Change Password
+                </h4>
+                <div class="space-y-3">
+                    <div>
+                        <input type="password" placeholder="Current Password" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border outline-none">
+                    </div>
+                    <div>
+                        <input type="password" placeholder="New Password" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border outline-none">
+                    </div>
+                    <div>
+                        <input type="password" placeholder="Confirm New Password" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2.5 border outline-none">
+                    </div>
+                </div>
+                <button onclick="updatePassword()" class="w-full mt-4 bg-gray-900 text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors">
+                    Update Password
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Global Fixed Tooltip (Hidden by default) -->
+<div id="global-tooltip" class="fixed hidden bg-gray-900 text-white text-xs rounded-lg p-3 z-[100] max-w-sm shadow-xl pointer-events-none transition-opacity duration-200 opacity-0">
+    <div class="font-bold mb-1 border-b border-gray-700 pb-1 text-gray-300">Reviewer Comment:</div>
+    <span id="tooltip-content" class="block whitespace-normal break-words"></span>
+    <!-- Arrow (Optional cosmetic) -->
+    <div class="absolute w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900 -bottom-1 left-1/2 -translate-x-1/2"></div>
+</div>
+
+<script>
+    // Mock Data - User Profile
+    const userProfile = {
+        name: "Alex Student",
+        id: "S001",
+        email: "alex.student@institute.edu",
+        dept: "Computer Science"
+    };
+
+    // Mock Data - Documents
+    let documents = [
+        {
+            id: 1,
+            title: "Merit Scholarship 2025",
+            type: "Scholarship Application",
+            date: "2023-10-15",
+            status: "Pending Admin",
+            statusClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+            comment: null
+        },
+        {
+            id: 2,
+            title: "Summer Internship NOC",
+            type: "Internship NOC Request",
+            date: new Date().toISOString().split('T')[0],
+            status: "Pending Reviewer",
+            statusClass: "bg-blue-100 text-blue-800 border-blue-200",
+            comment: null
+        },
+        {
+            id: 3,
+            title: "Semester 4 Grade Sheet",
+            type: "Grade Correction",
+            date: "2023-09-01",
+            status: "Approved",
+            statusClass: "bg-green-100 text-green-800 border-green-200",
+            comment: "Verified against central database."
+        },
+        {
+            id: 4,
+            title: "Hostel Allocation Form",
+            type: "Admission Form",
+            date: "2023-09-10",
+            status: "Action Required",
+            statusClass: "bg-red-100 text-red-800 border-red-200",
+            comment: "Signature missing on page 2. Please sign and re-upload. Additionally, please ensure your parent's contact number is updated in the profile section as we need to verify the address details."
+        }
+    ];
+
+    // --- Stats Logic ---
+    function updateStats() {
+        const pending = documents.filter(d => d.status.includes('Pending')).length;
+        const approved = documents.filter(d => d.status === 'Approved').length;
+        const action = documents.filter(d => d.status === 'Action Required').length;
+
+        document.getElementById('stat-pending').innerText = pending;
+        document.getElementById('stat-approved').innerText = approved;
+        document.getElementById('stat-action').innerText = action;
+    }
+
+    // --- Table Rendering Logic ---
+    function renderTable() {
+        const tbody = document.getElementById('doc-table-body');
+        const emptyState = document.getElementById('empty-state');
+
+        tbody.innerHTML = '';
+
+        if (documents.length === 0) {
+            emptyState.classList.remove('hidden');
+            return;
+        } else {
+            emptyState.classList.add('hidden');
+        }
+
+        documents.forEach(doc => {
+            // Reminder logic
+            const submitDate = new Date(doc.date);
+            const today = new Date();
+            const diffTime = Math.abs(today - submitDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const canRemind = diffDays > 10 && (doc.status.includes("Pending"));
+
+            // Comment HTML Generation
+            let commentIndicator = '';
+            if (doc.comment) {
+                const iconColor = doc.status === 'Action Required' ? 'text-red-500' : 'text-indigo-500';
+                // Escape quotes for data attribute
+                const safeComment = doc.comment.replace(/"/g, '&quot;');
+
+                commentIndicator = `
+                    <div class="ml-2 align-middle inline-block">
+                        <i class="fa-solid fa-circle-info ${iconColor} hover:scale-110 transition-transform cursor-help text-lg js-tooltip-trigger"
+                           data-comment="${safeComment}"></i>
+                    </div>
+                `;
+            }
+
+            const row = `
+                <tr class="hover:bg-gray-50 transition-colors group">
+                    <td class="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-red-500 shrink-0">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <div class="truncate max-w-[200px] sm:max-w-xs" title="${doc.title}">
+                            ${doc.title}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 whitespace-nowrap">${doc.type}</td>
+                    <td class="px-6 py-4 text-gray-500 whitespace-nowrap">${doc.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium border ${doc.statusClass}">
+                                ${doc.status}
+                            </span>
+                            ${commentIndicator}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right whitespace-nowrap">
+                        <button onclick="sendReminder(${doc.id})"
+                            class="${canRemind ? 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50' : 'text-gray-300 cursor-not-allowed'} px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                            ${!canRemind ? 'disabled' : ''}
+                            title="${canRemind ? 'Send email reminder to admin' : 'Available after 10 days of pending status'}">
+                            <i class="fa-regular fa-bell mr-1"></i> Remind
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        updateStats();
+    }
+
+    // --- Upload Modal Logic ---
+    const uploadModal = document.getElementById('upload-modal');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('file-name');
+    const fileNameText = document.getElementById('file-name-text');
+    const docTypeSelect = document.getElementById('docType');
+    const customDocContainer = document.getElementById('customDocTypeContainer');
+
+    function openUploadModal() {
+        uploadModal.classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+        uploadModal.classList.add('hidden');
+        fileInput.value = '';
+        clearFile();
+        docTypeSelect.value = "Scholarship Application";
+        toggleCustomDocInput();
+        document.getElementById('customDocName').value = '';
+    }
+
+    function toggleCustomDocInput() {
+        if (docTypeSelect.value === 'Others') {
+            customDocContainer.classList.remove('hidden');
+        } else {
+            customDocContainer.classList.add('hidden');
+        }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        if (file.type === 'application/pdf') {
+            fileNameDisplay.classList.remove('hidden');
+            fileNameText.textContent = file.name;
+        } else {
+            alert('Please upload a PDF file.');
+            fileInput.value = '';
+        }
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        fileNameDisplay.classList.add('hidden');
+    }
+    async function submitDocument() {
+    let type = docTypeSelect.value;
+
+    if (type === 'Others') {
+        const customName = document.getElementById('customDocName').value.trim();
+        if (!customName) {
+            alert("Please specify the document name.");
+            return;
+        }
+        type = customName;
+    }
+
+    if (!fileInput.files.length) {
+        alert("Please select a file to upload.");
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append("file", fileInput.files[0]);
+
+    try {
+        const res = await fetch("/upload", {
+            method: "POST",
+            body: fd
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            alert("Document uploaded successfully!");
+            closeUploadModal();
+            loadFromServer();
+        } else {
+            alert("Upload failed");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Server error");
+    }
+}
+
+async function loadFromServer(){
+    const d = await fetch("/documents").then(r=>r.json());
+
+    documents = d.map(x => ({
+        id: x.id,
+        title: x.name,
+        type: "Uploaded PDF",
+        date: new Date().toISOString().split('T')[0],
+        status: x.status,
+        statusClass: x.status==="approved"
+          ? "bg-green-100 text-green-800 border-green-200"
+          : x.status==="rejected"
+          ? "bg-red-100 text-red-800 border-red-200"
+          : "bg-yellow-100 text-yellow-800 border-yellow-200",
+        comment: null
+    }));
+
+    renderTable();
+}
+
+
+
+
+
+ 
+
+
+    // --- Profile Modal Logic ---
+    const profileModal = document.getElementById('profile-modal');
+
+    function openProfileModal() {
+        document.getElementById('profile-name').innerText = userProfile.name;
+        document.getElementById('profile-id').innerText = userProfile.id;
+        document.getElementById('profile-email').innerText = userProfile.email;
+        profileModal.classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+        profileModal.classList.add('hidden');
+    }
+
+    function updatePassword() {
+        alert("Password updated successfully! Please login again with your new credentials.");
+        closeProfileModal();
+    }
+
+    // --- General Actions ---
+    function sendReminder(id) {
+        alert(`Reminder sent to administration for Document #${id}`);
+    }
+
+    function logout() {
+        if(confirm('Are you sure you want to logout?')) {
+            window.location.href = '#';
+            alert("Logged out");
+        }
+    }
+
+    // --- Tooltip Logic ---
+    const tooltip = document.getElementById('global-tooltip');
+    const tooltipContent = document.getElementById('tooltip-content');
+    let tooltipTimeout;
+
+    // Use event delegation for dynamically added elements
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.classList.contains('js-tooltip-trigger')) {
+            const comment = e.target.getAttribute('data-comment');
+            if (!comment) return;
+
+            // Clear any existing hide timeout
+            clearTimeout(tooltipTimeout);
+
+            tooltipContent.textContent = comment;
+            tooltip.classList.remove('hidden');
+            // Force reflow to enable transition
+            void tooltip.offsetWidth;
+            tooltip.classList.remove('opacity-0');
+
+            const rect = e.target.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+
+            // Calculate Position (Center top preferred)
+            let top = rect.top - tooltipRect.height - 12; // 12px padding above
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+            // Boundary Checks
+            // Top: if clips top, move to bottom
+            if (top < 10) {
+                top = rect.bottom + 12;
+                // Optional: Flip arrow direction if needed, but simple positioning is sufficient
+            }
+
+            // Left/Right: keep within screen with padding
+            if (left < 10) left = 10;
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        if (e.target.classList.contains('js-tooltip-trigger')) {
+            tooltip.classList.add('opacity-0');
+            tooltipTimeout = setTimeout(() => {
+                tooltip.classList.add('hidden');
+            }, 200);
+        }
+    });
+
+    // --- Initialization ---
+    document.getElementById('nav-name').innerText = userProfile.name;
+    document.getElementById('nav-id').innerText = `ID: ${userProfile.id}`;
+
+    loadFromServer();
+
+    window.onclick = function(event) {
+        if (event.target == uploadModal) {
+            closeUploadModal();
+        }
+        if (event.target == profileModal) {
+            closeProfileModal();
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduFlow - Document Approval Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .role-card {
+            transition: all 0.3s ease;
+        }
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #4f46e5;
+        }
+        /* Fade In Animation */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-indigo-100 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="resetToHome()">
+            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-xl shadow-md">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 leading-tight">EduFlow</h1>
+                <p class="text-xs text-gray-500">Document Approval System</p>
+            </div>
+        </div>
+        <div class="text-sm text-gray-500 hidden sm:block">
+            <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">v1.1.0</span>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="flex-1 flex items-center justify-center p-4 sm:p-6">
+    <div class="max-w-4xl w-full relative">
+
+        <!-- Flash Message Container -->
+        <div id="flash-message" class="hidden absolute -top-16 left-0 right-0 mx-auto max-w-md bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-center shadow-lg transition-all duration-300 z-50" role="alert">
+            <span class="block sm:inline" id="flash-text">Success!</span>
+        </div>
+
+        <!-- ======================= 
+             VIEW 1: LANDING / ROLE SELECTION 
+             ======================= -->
+        <div id="landing-view" class="fade-in">
+            <!-- Welcome Header -->
+            <div class="text-center mb-10">
+                <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Welcome to the Portal</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Streamlined document tracking for scholarships, internships, and admissions. Select your role to begin.
+                </p>
+            </div>
+
+            <!-- Role Selection Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Student Card -->
+                <div onclick="selectRole('student')" class="role-card bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200 cursor-pointer group text-center">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-user-graduate text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Student</h3>
+                    <p class="text-sm text-gray-500 mb-6">Upload documents and track approval status.</p>
+                    <span class="text-blue-600 text-sm font-medium group-hover:underline">Login as Student &rarr;</span>
+                </div>
+
+                <!-- Reviewer Card -->
+                <div onclick="selectRole('reviewer')" class="role-card bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200 cursor-pointer group text-center">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-orange-50 rounded-full flex items-center justify-center text-orange-600 mb-6 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-file-signature text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Reviewer</h3>
+                    <p class="text-sm text-gray-500 mb-6">Verify department-specific documents.</p>
+                    <span class="text-orange-600 text-sm font-medium group-hover:underline">Login as Reviewer &rarr;</span>
+                </div>
+
+                <!-- Admin Card -->
+                <div onclick="selectRole('admin')" class="role-card bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200 cursor-pointer group text-center">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-purple-50 rounded-full flex items-center justify-center text-purple-600 mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-user-shield text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Administrator</h3>
+                    <p class="text-sm text-gray-500 mb-6">Manage users and final approvals.</p>
+                    <span class="text-purple-600 text-sm font-medium group-hover:underline">Login as Admin &rarr;</span>
+                </div>
+            </div>
+            
+            <div class="mt-10 text-center">
+                <p class="text-gray-500">New here? <button onclick="showSignup()" class="text-indigo-600 font-medium hover:underline">Create an account</button></p>
+            </div>
+        </div>
+
+        <!-- ======================= 
+             VIEW 2: LOGIN FORM 
+             ======================= -->
+        <div id="login-view" class="hidden max-w-md mx-auto fade-in">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="px-8 py-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-800" id="login-title">Role Login</h3>
+                    <button onclick="resetToHome()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                </div>
+                <div class="p-8">
+                    <form id="login-form" onsubmit="handleLogin(event)">
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">User ID / Email</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-regular fa-id-badge text-gray-400"></i>
+                                </div>
+                                <input type="text" id="loginId" required
+                                       class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                       placeholder="Enter your ID">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" required
+                                       class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                       placeholder="••••••••">
+                            </div>
+                        </div>
+                        
+                        <!-- Forgot Password Link -->
+                        <div class="flex justify-end mb-6">
+                            <button type="button" onclick="showForgotPassword()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                Forgot password?
+                            </button>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30">
+                            Access Dashboard
+                        </button>
+
+                        <!-- Create Account Divider -->
+                        <div class="relative mt-8">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">Don't have an account?</span>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="showSignup()"
+                                class="mt-6 w-full bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                            Create New Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= 
+             VIEW 3: FORGOT PASSWORD 
+             ======================= -->
+        <div id="forgot-password-view" class="hidden max-w-md mx-auto fade-in">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="px-8 py-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-800">Reset Password</h3>
+                    <button onclick="backToLogin()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                </div>
+                <div class="p-8">
+                    <div class="text-center mb-6">
+                        <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-600">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Enter the email address associated with your account and we'll send you a link to reset your password.
+                        </p>
+                    </div>
+
+                    <form onsubmit="handleForgotPasswordSubmit(event)">
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-envelope text-gray-400"></i>
+                                </div>
+                                <input type="email" required
+                                       class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                       placeholder="you@university.edu">
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30">
+                            Send Reset Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= 
+             VIEW 4: CREATE ACCOUNT 
+             ======================= -->
+        <div id="signup-view" class="hidden max-w-lg mx-auto fade-in">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="px-8 py-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-800">Create Account</h3>
+                    <button onclick="resetToHome()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                </div>
+                <div class="p-8">
+                    <form onsubmit="handleSignupSubmit(event)">
+                        
+                        <!-- Role Selection Dropdown -->
+                        <div class="mb-5">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-user-tag text-gray-400"></i>
+                                </div>
+                                <select id="signup-role" onchange="updateSignupFields()" class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm appearance-none bg-white">
+                                    <option value="" disabled selected>Select your role</option>
+                                    <option value="student">Student</option>
+                                    <option value="reviewer">Faculty Reviewer</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Common Fields -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                <input type="text" required placeholder="John Doe"
+                                       class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input type="email" required placeholder="john@uni.edu"
+                                       class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Fields Area -->
+                        <div id="dynamic-fields" class="mb-4 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department / Branch</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-building-columns text-gray-400"></i>
+                                </div>
+                                <select id="branch-select" class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
+                                    <option value="CS">Computer Science</option>
+                                    <option value="ME">Mechanical Engineering</option>
+                                    <option value="EE">Electrical Engineering</option>
+                                    <option value="CV">Civil Engineering</option>
+                                    <option value="BA">Business Administration</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Create Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" required placeholder="Min. 8 characters"
+                                       class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-lg shadow-green-500/30">
+                            Create Account
+                        </button>
+                        
+                        <p class="mt-4 text-center text-sm text-gray-600">
+                            Already have an account? 
+                            <button type="button" onclick="backToLogin()" class="text-indigo-600 font-medium hover:underline">Log In</button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-gray-200 py-6 mt-auto">
+    <div class="text-center text-sm text-gray-500">
+        &copy; 2025 EduFlow Document System. All rights reserved.
+    </div>
+</footer>
+
+<script>
+    let currentContext = ''; // Tracks which role was clicked initially
+
+    // Utility: Show Toast Message
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('flash-message');
+        const text = document.getElementById('flash-text');
+        
+        text.textContent = message;
+        toast.className = `absolute -top-16 left-0 right-0 mx-auto max-w-md border px-4 py-3 rounded relative text-center shadow-lg transition-all duration-300 z-50 ${type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700'}`;
+        
+        toast.classList.remove('hidden');
+        setTimeout(() => { toast.classList.remove('-top-16'); toast.classList.add('top-4'); }, 10);
+
+        setTimeout(() => {
+            toast.classList.remove('top-4');
+            toast.classList.add('-top-16');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3000);
+    }
+
+    // Navigation: Switch Views
+    function switchView(viewId) {
+        // Hide all views
+        ['landing-view', 'login-view', 'forgot-password-view', 'signup-view'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        // Show target view
+        const view = document.getElementById(viewId);
+        view.classList.remove('hidden');
+        // Reset animation
+        view.classList.remove('fade-in');
+        void view.offsetWidth; // trigger reflow
+        view.classList.add('fade-in');
+    }
+
+    // Role Selection Logic
+    function selectRole(role) {
+        currentContext = role;
+        const titleEl = document.getElementById('login-title');
+        const inputEl = document.getElementById('loginId');
+        
+        // Update UI based on role
+        if(role === 'student') {
+            titleEl.textContent = 'Student Login';
+            titleEl.className = 'text-lg font-bold text-blue-600';
+            inputEl.placeholder = 'e.g., S001';
+        } else if (role === 'admin') {
+            titleEl.textContent = 'Administrator Login';
+            titleEl.className = 'text-lg font-bold text-purple-600';
+            inputEl.placeholder = 'e.g., A001';
+        } else {
+            titleEl.textContent = 'Reviewer Login';
+            titleEl.className = 'text-lg font-bold text-orange-600';
+            inputEl.placeholder = 'e.g., R001';
+        }
+        
+        switchView('login-view');
+    }
+
+    // Reset to Landing Page
+    function resetToHome() {
+        currentContext = '';
+        switchView('landing-view');
+        // Reset forms
+        document.getElementById('login-form').reset();
+        document.getElementById('signup-role').value = "";
+    }
+
+    // Show Signup View
+    function showSignup() {
+        switchView('signup-view');
+        // Pre-select role if we came from a specific login context
+        if (currentContext) {
+            document.getElementById('signup-role').value = currentContext;
+            updateSignupFields();
+        }
+    }
+
+    // Show Forgot Password View
+    function showForgotPassword() {
+        switchView('forgot-password-view');
+    }
+
+    // Back to Login (preserve context if exists, else home)
+    function backToLogin() {
+        if(currentContext) {
+            switchView('login-view');
+        } else {
+            // If they clicked "Create Account" from home, then "Log In", go to generic login or home?
+            // Let's go home to force role selection for better UX
+            resetToHome();
+        }
+    }
+
+    // Dynamic Fields in Signup
+    function updateSignupFields() {
+        const role = document.getElementById('signup-role').value;
+        const dynamicFields = document.getElementById('dynamic-fields');
+        
+        if (role === 'student' || role === 'reviewer') {
+            dynamicFields.classList.remove('hidden');
+        } else {
+            dynamicFields.classList.add('hidden');
+        }
+    }
+
+    // Handle Login Submission
+    function handleLogin(event) {
+        event.preventDefault();
+        const userId = document.getElementById('loginId').value;
+        
+        // Mock Redirects
+        if (currentContext === 'student') {
+            window.location.href = 'student.html';
+        } else if (currentContext === 'admin') {
+            window.location.href = 'admin.html';
+        } else if (currentContext === 'reviewer') {
+            window.location.href = 'reviewer.html';
+        }
+    }
+
+    // Handle Forgot Password
+    function handleForgotPasswordSubmit(event) {
+        event.preventDefault();
+        // Simulate API call
+        const btn = event.target.querySelector('button');
+        const originalText = btn.textContent;
+        btn.textContent = 'Sending...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            showToast('Reset link sent to your email!');
+            backToLogin();
+        }, 1500);
+    }
+
+    // Handle Signup
+    function handleSignupSubmit(event) {
+        event.preventDefault();
+        // Simulate API call
+        const role = document.getElementById('signup-role').value;
+        if(!role) {
+            alert("Please select a role.");
+            return;
+        }
+
+        const btn = event.target.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.textContent = 'Creating Account...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            
+            // Generate a mock ID based on role
+            let newId = '';
+            if(role === 'student') newId = 'S' + Math.floor(Math.random() * 1000);
+            if(role === 'reviewer') newId = 'R' + Math.floor(Math.random() * 1000);
+            if(role === 'admin') newId = 'A' + Math.floor(Math.random() * 1000);
+
+            showToast(`Account created! Your ID is ${newId}. Please login.`);
+            
+            // Set the context to the new role so login screen matches
+            currentContext = role;
+            selectRole(role); 
+            // Pre-fill the ID
+            document.getElementById('loginId').value = newId;
+        }, 1500);
+    }
+</script>
+</body>
+</html>

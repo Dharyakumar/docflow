@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - EduFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white text-xl">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900">EduFlow</h1>
+                <span class="text-xs font-medium bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Admin Console</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 border-l pl-6 border-gray-200">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-semibold text-gray-900">Main Administrator</p>
+                    <p class="text-xs text-gray-500">Central Office</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold border-2 border-white shadow-sm">
+                    AD
+                </div>
+            </div>
+            <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors" title="Logout">
+                <i class="fa-solid fa-right-from-bracket text-xl"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8">
+
+    <!-- Header & Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="md:col-span-1">
+            <h2 class="text-2xl font-bold text-gray-900">Global Overview</h2>
+            <p class="text-gray-500 text-sm mt-1">Manage intake and route to departments.</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 border-l-4 border-l-yellow-400">
+            <div class="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center">
+                <i class="fa-solid fa-inbox"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">Pending</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-incoming">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 border-l-4 border-l-blue-400">
+            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i class="fa-solid fa-share-from-square"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">With Reviewer</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-reviewer">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 border-l-4 border-l-green-400">
+            <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">Completed</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-completed">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-2">
+        <button onclick="filterTable('all')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 active-filter" id="filter-all">
+            All Applications
+        </button>
+        <button onclick="filterTable('pending')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="filter-pending">
+            Needs Approval
+        </button>
+    </div>
+
+    <!-- Main Table -->
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                <tr>
+                    <th class="px-6 py-4">Student</th>
+                    <th class="px-6 py-4">Application Type</th>
+                    <th class="px-6 py-4">Date</th>
+                    <th class="px-6 py-4">Current Stage</th>
+                    <th class="px-6 py-4 text-center">Controls</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm" id="admin-table-body">
+                <!-- JS populated -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- Action Modal -->
+<div id="admin-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden fade-in max-h-[90vh] flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="font-bold text-gray-900">Review Application</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <!-- Document Details Card -->
+            <div class="bg-purple-50 p-4 rounded-lg mb-6 border border-purple-100">
+                <h4 class="font-semibold text-purple-900" id="modal-title">Scholarship App</h4>
+                <p class="text-sm text-purple-700 mb-3" id="modal-student">Student: Alex Student (S001)</p>
+
+                <!-- View PDF Button -->
+                <button onclick="viewPDF()" class="w-full bg-white hover:bg-gray-50 text-purple-700 font-medium px-4 py-2 rounded-lg border border-purple-200 transition-colors flex items-center justify-center gap-2 shadow-sm text-sm">
+                    <i class="fa-regular fa-file-pdf text-red-500 text-lg"></i>
+                    View Student's PDF
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <label class="block text-sm font-medium text-gray-700">Workflow Action</label>
+
+                <!-- Approve Button -->
+                <button onclick="processAction('forward')" class="w-full group flex items-center justify-between p-4 border rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
+                    <div>
+                        <span class="block font-semibold text-gray-800 group-hover:text-blue-700">Approve & Forward</span>
+                        <span class="text-xs text-gray-500">Route to Department Reviewer</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-gray-300 group-hover:text-blue-500 text-xl"></i>
+                </button>
+
+                <!-- Reject Button -->
+                <button onclick="processAction('reject')" class="w-full group flex items-center justify-between p-4 border rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left" id="btn-reject-trigger">
+                    <div>
+                        <span class="block font-semibold text-gray-800 group-hover:text-red-700">Reject Application</span>
+                        <span class="text-xs text-gray-500">Terminate process immediately</span>
+                    </div>
+                    <i class="fa-solid fa-ban text-gray-300 group-hover:text-red-500 text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Feedback Area (Shows on Reject) -->
+            <div id="feedback-area" class="hidden mt-4 animate-fade-in">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="admin-comment" rows="3" class="w-full border-gray-300 rounded-lg text-sm p-3 border focus:ring-red-500 focus:border-red-500 shadow-sm" placeholder="Please explain why this application is being rejected..."></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="cancelReject()" class="flex-1 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
+                    <button onclick="confirmReject()" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 shadow-md shadow-red-500/30">Confirm Rejection</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mock Data
+    let allDocs = [
+        { id: 1, student: "Alex Student (S001)", title: "Merit Scholarship 2025", type: "Scholarship", date: "2023-10-25", status: "Pending Admin" },
+        { id: 2, student: "Maria Garcia (S045)", title: "Internship NOC", type: "Internship", date: "2023-10-24", status: "Pending Reviewer" },
+        { id: 3, student: "John Doe (S012)", title: "Admission Form", type: "Admission", date: "2023-10-20", status: "Approved" },
+        { id: 4, student: "Sarah Smith (S099)", title: "Grade Correction", type: "Grade", date: "2023-10-26", status: "Pending Admin" },
+        { id: 5, student: "Mike Ross (S022)", title: "Library Due Waiver", type: "Administrative", date: "2023-10-18", status: "Rejected" }
+    ];
+
+    let currentFilter = 'all';
+    let selectedDocId = null;
+
+    // Stats Calculation
+    function updateStats() {
+        document.getElementById('stat-incoming').textContent = allDocs.filter(d => d.status === 'Pending Admin').length;
+        document.getElementById('stat-reviewer').textContent = allDocs.filter(d => d.status === 'Pending Reviewer').length;
+        document.getElementById('stat-completed').textContent = allDocs.filter(d => ['Approved', 'Rejected'].includes(d.status)).length;
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('admin-table-body');
+        tbody.innerHTML = '';
+        updateStats();
+
+        const filteredDocs = currentFilter === 'all'
+            ? allDocs
+            : allDocs.filter(d => d.status === 'Pending Admin');
+
+        filteredDocs.forEach(doc => {
+            // Determine Badge Color
+            let badgeClass = "bg-gray-100 text-gray-800";
+            if(doc.status === 'Pending Admin') badgeClass = "bg-yellow-100 text-yellow-800";
+            if(doc.status === 'Pending Reviewer') badgeClass = "bg-blue-100 text-blue-800";
+            if(doc.status === 'Approved') badgeClass = "bg-green-100 text-green-800";
+            if(doc.status === 'Rejected') badgeClass = "bg-red-100 text-red-800";
+
+            const isActionable = doc.status === 'Pending Admin';
+
+            const row = `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-gray-900">${doc.student}</td>
+                        <td class="px-6 py-4 text-gray-500">${doc.title}</td>
+                        <td class="px-6 py-4 text-gray-500">${doc.date}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium border border-opacity-20 ${badgeClass}">
+                                ${doc.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            ${isActionable ? `
+                                <button onclick="openModal('${doc.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded border border-indigo-200 hover:bg-indigo-100 transition-colors">
+                                    Process
+                                </button>
+                            ` : `
+                                <span class="text-xs text-gray-400 italic">No Actions</span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function filterTable(filter) {
+        currentFilter = filter;
+        // Toggle active styles
+        const btnAll = document.getElementById('filter-all');
+        const btnPending = document.getElementById('filter-pending');
+
+        if (filter === 'all') {
+            btnAll.classList.add('bg-purple-50', 'border-purple-500', 'text-purple-700');
+            btnPending.classList.remove('bg-purple-50', 'border-purple-500', 'text-purple-700');
+        } else {
+            btnPending.classList.add('bg-purple-50', 'border-purple-500', 'text-purple-700');
+            btnAll.classList.remove('bg-purple-50', 'border-purple-500', 'text-purple-700');
+        }
+
+        renderTable();
+    }
+
+    function openModal(id) {
+        selectedDocId = id;
+        const doc = allDocs.find(d => d.id === id);
+        document.getElementById('modal-title').textContent = doc.title;
+        document.getElementById('modal-student').textContent = `Student: ${doc.student}`;
+
+        // Reset UI
+        document.getElementById('feedback-area').classList.add('hidden');
+        document.getElementById('admin-comment').value = '';
+
+        // Show Action Buttons
+        document.getElementById('btn-reject-trigger').classList.remove('hidden');
+
+        document.getElementById('admin-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('admin-modal').classList.add('hidden');
+        selectedDocId = null;
+    }
+
+    // Mock PDF Viewer
+    function viewPDF() {
+        const doc = allDocs.find(d => d.id === selectedDocId);
+        if(doc) {
+            // In a real app, this would open the actual file URL
+            alert(`Opening PDF for ${doc.title}...\n(This is a mock viewer)`);
+        }
+    }
+
+    function processAction(action) {
+        if (action === 'forward') {
+            const doc = allDocs.find(d => d.id === selectedDocId);
+            doc.status = 'Pending Reviewer';
+            alert(`Successfully Forwarded "${doc.title}" to Reviewer.`);
+            closeModal();
+            renderTable();
+        } else if (action === 'reject') {
+            // Hide the trigger button to focus on feedback
+            document.getElementById('btn-reject-trigger').classList.add('hidden');
+            // Show comment box for rejection
+            document.getElementById('feedback-area').classList.remove('hidden');
+        }
+    }
+
+    function cancelReject() {
+        document.getElementById('feedback-area').classList.add('hidden');
+        document.getElementById('btn-reject-trigger').classList.remove('hidden');
+    }
+
+    function confirmReject() {
+        const comment = document.getElementById('admin-comment').value.trim();
+        if (!comment) {
+            alert("Feedback is MANDATORY for rejection. Please explain why.");
+            return;
+        }
+        const doc = allDocs.find(d => d.id === selectedDocId);
+        doc.status = 'Rejected';
+
+        alert(`Application Rejected.\nFeedback Sent: "${comment}"`);
+
+        closeModal();
+        renderTable();
+    }
+
+    function logout() {
+        if(confirm('Are you sure you want to logout?')) {
+            window.location.href = 'index.html';
+        }
+    }
+
+    // Initialize with default filter active style
+    filterTable('all');
+
+    // ===== BACKEND CONNECTION OVERRIDE =====
+
+async function loadFromServer(){
+ const d = await fetch("/documents").then(r=>r.json());
+
+ allDocs = d
+   .filter(x=>x.status==="forwarded")
+   .map(x=>({
+     id: x.id,
+     student: "Student (S001)",
+     title: x.name,
+     type: "Uploaded",
+     date: new Date().toISOString().split('T')[0],
+     status: "Pending Admin"
+   }));
+
+ renderTable();
+}
+
+// Override approve/reject
+
+function processAction(action){
+ if(action==="forward"){
+   approveDoc();
+ }
+
+ if(action==="reject"){
+   document.getElementById('feedback-area').classList.remove('hidden');
+ }
+}
+
+async function approveDoc(){
+ await fetch("/approve/"+selectedDocId,{method:"POST"});
+ alert("Approved");
+ closeModal();
+ loadFromServer();
+}
+
+function confirmReject(){
+ rejectDoc();
+}
+
+async function rejectDoc(){
+ await fetch("/reject/"+selectedDocId,{method:"POST"});
+ alert("Rejected");
+ closeModal();
+ loadFromServer();
+}
+
+// Override modal opener for UUID
+function openModal(id){
+ selectedDocId=id;
+
+ const doc=allDocs.find(x=>x.id===id);
+ document.getElementById('modal-title').textContent=doc.title;
+ document.getElementById('modal-student').textContent=doc.student;
+
+ document.getElementById('admin-modal').classList.remove('hidden');
+}
+
+// Load real docs
+loadFromServer();
+
+</script>
+
+
+
+</body>
+</html>

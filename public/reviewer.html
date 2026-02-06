@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviewer Dashboard - EduFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Custom Scrollbar for Admin List */
+        .admin-list-container::-webkit-scrollbar { width: 6px; }
+        .admin-list-container::-webkit-scrollbar-track { background: #f1f1f1; }
+        .admin-list-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .admin-list-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center text-white text-xl">
+                <i class="fa-solid fa-file-signature"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900">EduFlow</h1>
+                <span class="text-xs font-medium bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Reviewer Portal</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 sm:gap-6">
+
+            <!-- Notification Bell -->
+            <div class="relative">
+                <button onclick="toggleNotifications()" class="relative p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                </button>
+
+                <!-- Notification Dropdown -->
+                <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden fade-in origin-top-right">
+                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <h3 class="text-sm font-semibold text-gray-800">Notifications</h3>
+                        <span class="text-xs text-indigo-600 cursor-pointer hover:underline" onclick="markAllRead()">Mark all read</span>
+                    </div>
+                    <ul class="max-h-64 overflow-y-auto" id="notification-list">
+                        <!-- Items populated by JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Profile Section Trigger -->
+            <div onclick="openProfileModal()" class="flex items-center gap-3 border-l pl-4 sm:pl-6 border-gray-200 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors group">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">Dr. Reviewer</p>
+                    <p class="text-xs text-gray-500">Dept: Computer Science</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold border-2 border-white shadow-sm group-hover:border-indigo-100 transition-all">
+                    DR
+                </div>
+            </div>
+
+            <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors" title="Logout">
+                <i class="fa-solid fa-right-from-bracket text-xl"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8" onclick="closeNotificationsOutside(event)">
+
+    <!-- Header & Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="md:col-span-1">
+            <h2 class="text-2xl font-bold text-gray-900">Incoming Requests</h2>
+            <p class="text-gray-500 text-sm mt-1">Review student applications and forward to the correct Admin department.</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">Pending Review</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-pending">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+                <i class="fa-solid fa-share-from-square"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">Forwarded</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-forwarded">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold">Processed (Ret/Rej)</p>
+                <p class="text-xl font-bold text-gray-900" id="stat-returned">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Table -->
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="font-semibold text-gray-800">Student Applications</h3>
+            <span class="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">Sort by: Date (Oldest)</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                <tr>
+                    <th class="px-6 py-4">Student Name</th>
+                    <th class="px-6 py-4">Document Details</th>
+                    <th class="px-6 py-4">Submitted</th>
+                    <th class="px-6 py-4">Status</th>
+                    <th class="px-6 py-4 text-center">Action</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm" id="queue-table-body">
+                <!-- JS will populate this -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- Review Action Modal -->
+<div id="review-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden fade-in flex flex-col max-h-[90vh]">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
+            <h3 class="font-bold text-gray-900">Process Application</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <!-- Doc Info -->
+            <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm" id="modal-avatar">AS</div>
+                    <div>
+                        <p class="font-semibold text-gray-900" id="modal-student">Alex Student</p>
+                        <p class="text-xs text-gray-500" id="modal-id">ID: S001</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-700 font-medium" id="modal-doc-title">Internship NOC Request</p>
+                <a href="#" class="text-xs text-indigo-600 hover:underline flex items-center gap-1 mt-1">
+                    <i class="fa-regular fa-file-pdf"></i> View Submitted PDF
+                </a>
+            </div>
+
+            <!-- Action Selection -->
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700">Decision</label>
+                <!-- Grid Options -->
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- Forward Option -->
+                    <label class="cursor-pointer">
+                        <input type="radio" name="action" value="approve" class="peer hidden" onchange="handleActionChange('approve')">
+                        <div class="border rounded-lg p-2 text-center hover:bg-green-50 peer-checked:bg-green-50 peer-checked:border-green-500 peer-checked:text-green-700 transition-all h-full flex flex-col justify-center items-center">
+                            <i class="fa-solid fa-share-from-square mb-1 block text-lg"></i>
+                            <span class="text-[10px] sm:text-xs font-semibold leading-tight">Forward<br>to Admin</span>
+                        </div>
+                    </label>
+
+                    <!-- Return Option -->
+                    <label class="cursor-pointer">
+                        <input type="radio" name="action" value="return" class="peer hidden" onchange="handleActionChange('return')">
+                        <div class="border rounded-lg p-2 text-center hover:bg-yellow-50 peer-checked:bg-yellow-50 peer-checked:border-yellow-500 peer-checked:text-yellow-700 transition-all h-full flex flex-col justify-center items-center">
+                            <i class="fa-solid fa-rotate-left mb-1 block text-lg"></i>
+                            <span class="text-[10px] sm:text-xs font-semibold leading-tight">Return<br>(Needs Edit)</span>
+                        </div>
+                    </label>
+
+                    <!-- Reject Option -->
+                    <label class="cursor-pointer">
+                        <input type="radio" name="action" value="reject" class="peer hidden" onchange="handleActionChange('reject')">
+                        <div class="border rounded-lg p-2 text-center hover:bg-red-50 peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-700 transition-all h-full flex flex-col justify-center items-center">
+                            <i class="fa-solid fa-ban mb-1 block text-lg"></i>
+                            <span class="text-[10px] sm:text-xs font-semibold leading-tight">Reject<br>(Deny)</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Admin Selection Dropdown -->
+                <div id="admin-selection-container" class="hidden animate-fade-in">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Select Destination Admin <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-building-columns text-gray-400"></i>
+                        </div>
+                        <select id="admin-select" class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm appearance-none cursor-pointer hover:border-indigo-400 transition-colors">
+                            <option value="">-- Select Department --</option>
+                            <!-- Options populated by JS -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">This file will be routed to the selected department for final approval.</p>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Feedback <span id="required-star" class="text-red-500 hidden">* (Mandatory)</span>
+                    </label>
+                    <textarea id="modal-comments" rows="3"
+                              class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-3 border"
+                              placeholder="Type reason for rejection, required corrections, or instructions..."></textarea>
+                    <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <i class="fa-regular fa-paper-plane"></i>
+                        Feedback will be sent directly to <span class="font-bold text-gray-700" id="feedback-recipient">the student</span>.
+                    </p>
+                </div>
+
+                <button onclick="submitReview()" class="w-full bg-orange-600 text-white py-2.5 rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-lg shadow-orange-500/30">
+                    Confirm Decision
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profile-modal" class="fixed inset-0 bg-gray-900/60 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden fade-in">
+        <!-- Header -->
+        <div class="bg-indigo-600 px-6 py-6 text-white text-center">
+            <div class="w-16 h-16 bg-white/20 rounded-full mx-auto flex items-center justify-center text-2xl font-bold mb-3 backdrop-blur-md border border-white/30">
+                DR
+            </div>
+            <h3 class="text-xl font-bold" id="profile-name">Reviewer Name</h3>
+            <p class="text-indigo-200 text-sm" id="profile-email">email@example.com</p>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 space-y-5">
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase font-semibold">User ID</p>
+                    <p class="text-gray-900 font-bold" id="profile-id">R-000</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase font-semibold">Role</p>
+                    <p class="text-gray-900 font-bold">Reviewer</p>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="border-t border-gray-100 pt-5">
+                <h4 class="text-sm font-bold text-gray-900 mb-3">Security Settings</h4>
+                <div class="space-y-3">
+                    <div class="relative">
+                        <input type="password" id="current-password" placeholder="Current Password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none pl-9">
+                        <i class="fa-solid fa-lock absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="new-password" placeholder="New Password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none pl-9">
+                        <i class="fa-solid fa-key absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="confirm-password" placeholder="Confirm New Password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none pl-9">
+                        <i class="fa-solid fa-check-double absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm">Cancel</button>
+                <button onclick="updatePassword()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm shadow-md shadow-indigo-500/20">Update Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Models ---
+
+    // User Profile Data
+    const userProfile = {
+        name: "Dr. Reviewer",
+        id: "R001",
+        email: "reviewer@eduflow.edu"
+    };
+
+    // Notification Data (Mock)
+    const notifications = [
+        { id: 1, text: "New application received from John Doe.", time: "10m ago", read: false },
+        { id: 2, text: "Scholarship Dept accepted file #105.", time: "1h ago", read: false },
+        { id: 3, text: "System maintenance scheduled for tonight.", time: "5h ago", read: true }
+    ];
+
+    // Available Admins
+    const adminDepartments = [
+        { id: "scholarship", name: "Scholarship Department" },
+        { id: "chemistry", name: "Chemistry Department" },
+        { id: "cs", name: "Computer Science Dept" },
+        { id: "physics", name: "Physics Department" },
+        { id: "accounts", name: "Accounts Section" },
+        { id: "registrar", name: "Registrar Office" },
+        { id: "exam_cell", name: "Examination Cell" },
+        { id: "library", name: "Central Library" },
+        { id: "hostel", name: "Hostel Administration" }
+    ];
+
+    let applications = [];
+
+
+    let selectedAppId = null;
+    let stats = { forwarded: 12, returned: 3 };
+
+    // --- Notification Logic ---
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notification-dropdown');
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            renderNotifications();
+        }
+    }
+
+    function renderNotifications() {
+        const list = document.getElementById('notification-list');
+        list.innerHTML = '';
+        if(notifications.length === 0) {
+            list.innerHTML = '<li class="px-4 py-3 text-xs text-gray-500 text-center">No new notifications</li>';
+            return;
+        }
+
+        notifications.forEach(notif => {
+            const bgClass = notif.read ? 'bg-white' : 'bg-blue-50/50';
+            const dot = notif.read ? '' : '<span class="w-2 h-2 bg-blue-500 rounded-full"></span>';
+            list.innerHTML += `
+                <li class="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors cursor-pointer flex justify-between items-start gap-2 ${bgClass}">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">${notif.time}</p>
+                        <p class="text-sm text-gray-800 leading-snug">${notif.text}</p>
+                    </div>
+                    ${dot}
+                </li>
+            `;
+        });
+    }
+
+    function markAllRead() {
+        notifications.forEach(n => n.read = true);
+        renderNotifications();
+    }
+
+    function closeNotificationsOutside(event) {
+        const dropdown = document.getElementById('notification-dropdown');
+        const bell = event.target.closest('button');
+        const insideDropdown = event.target.closest('#notification-dropdown');
+
+        if (!dropdown.classList.contains('hidden') && !bell && !insideDropdown) {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    // --- Profile Modal Logic ---
+
+    const profileModal = document.getElementById('profile-modal');
+
+    function openProfileModal() {
+        document.getElementById('profile-name').innerText = userProfile.name;
+        document.getElementById('profile-id').innerText = userProfile.id;
+        document.getElementById('profile-email').innerText = userProfile.email;
+
+        // Clear password fields
+        document.getElementById('current-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+
+        profileModal.classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+        profileModal.classList.add('hidden');
+    }
+
+    function updatePassword() {
+        const currentPass = document.getElementById('current-password').value;
+        const newPass = document.getElementById('new-password').value;
+        const confirmPass = document.getElementById('confirm-password').value;
+
+        // Validation
+        if (!currentPass) {
+            alert("Please enter your current password to authorize changes.");
+            return;
+        }
+        if (!newPass) {
+            alert("Please enter a new password.");
+            return;
+        }
+        if (newPass !== confirmPass) {
+            alert("New passwords do not match.");
+            return;
+        }
+
+        // Simulating backend call
+        alert("Password updated successfully! Please login again with your new credentials.");
+        closeProfileModal();
+    }
+
+    // --- Main Dashboard Logic ---
+
+    function renderQueue() {
+        const tbody = document.getElementById('queue-table-body');
+        tbody.innerHTML = '';
+
+        // Update Stats
+        document.getElementById('stat-pending').textContent = applications.length;
+        document.getElementById('stat-forwarded').textContent = stats.forwarded;
+        document.getElementById('stat-returned').textContent = stats.returned;
+
+        if (applications.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">No pending applications. Queue cleared!</td></tr>`;
+            return;
+        }
+
+        applications.forEach(app => {
+            const row = `
+                    <tr class="hover:bg-gray-50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                                    ${app.student.charAt(0)}${app.student.split(' ')[1]?.charAt(0) || ''}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">${app.student}</p>
+                                    <p class="text-xs text-gray-500">${app.studentId}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">${app.title}</div>
+                            <div class="text-xs text-gray-500">${app.type}</div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 text-sm">${app.date}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                ${app.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="openModal('${app.id}')"
+                                class="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border border-indigo-200">
+                                Process
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // --- Review Modal Logic ---
+
+    function populateAdminSelect() {
+        const select = document.getElementById('admin-select');
+        select.innerHTML = '<option value="">-- Select Department --</option>'; // Reset
+
+        adminDepartments.forEach(dept => {
+            const opt = document.createElement('option');
+            opt.value = dept.id;
+            opt.text = dept.name;
+            select.add(opt);
+        });
+    }
+
+    function openModal(id) {
+        const app = applications.find(a => a.id === id);
+        if (!app) return;
+
+        selectedAppId = id;
+
+        // Populate Modal Info
+        document.getElementById('modal-student').textContent = app.student;
+        document.getElementById('modal-id').textContent = `ID: ${app.studentId}`;
+        document.getElementById('modal-avatar').textContent = app.student.charAt(0) + (app.student.split(' ')[1]?.charAt(0) || '');
+        document.getElementById('modal-doc-title').textContent = app.title;
+        document.getElementById('feedback-recipient').textContent = app.student;
+
+        // Reset Form
+        document.querySelectorAll('input[name="action"]').forEach(el => el.checked = false);
+        document.getElementById('modal-comments').value = '';
+
+        // Populate Admin Dropdown
+        populateAdminSelect();
+
+        // Hide conditional fields
+        document.getElementById('admin-selection-container').classList.add('hidden');
+        document.getElementById('required-star').classList.add('hidden');
+
+        document.getElementById('review-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('review-modal').classList.add('hidden');
+        selectedAppId = null;
+    }
+
+    function handleActionChange(action) {
+        const adminContainer = document.getElementById('admin-selection-container');
+        const star = document.getElementById('required-star');
+        const comments = document.getElementById('modal-comments');
+
+        if (action === 'approve') {
+            // Forward
+            adminContainer.classList.remove('hidden');
+            star.classList.add('hidden');
+            comments.placeholder = "Optional instructions for the admin...";
+        } else if (action === 'return') {
+            // Return
+            adminContainer.classList.add('hidden');
+            star.classList.remove('hidden');
+            comments.placeholder = "Please list the corrections needed from the student...";
+        } else if (action === 'reject') {
+            // Reject
+            adminContainer.classList.add('hidden');
+            star.classList.remove('hidden');
+            comments.placeholder = "Please explain why this application is being denied...";
+        }
+    }
+
+    function submitReview() {
+        const action = document.querySelector('input[name="action"]:checked')?.value;
+        const comments = document.getElementById('modal-comments').value.trim();
+        const adminSelected = document.getElementById('admin-select');
+
+        if (!action) {
+            alert("Please select a decision (Forward, Return, or Reject).");
+            return;
+        }
+
+        // Validation Logic
+        if (action === 'approve') {
+            if (!adminSelected.value) {
+                alert("Please select the Department Admin to forward this file to.");
+                return;
+            }
+        }
+
+        if ((action === 'return' || action === 'reject') && comments === '') {
+            alert("Feedback is MANDATORY so the student knows what to fix or why it was denied.");
+            return;
+        }
+
+        // Process Logic (Simulated)
+        const appIndex = applications.findIndex(a => a.id === selectedAppId);
+        if (appIndex > -1) {
+            const app = applications[appIndex];
+            applications.splice(appIndex, 1); // Remove from queue
+
+            // Update stats
+            if (action === 'approve') stats.forwarded++;
+            if (action === 'return' || action === 'reject') stats.returned++;
+
+            renderQueue();
+            closeModal();
+
+            // Feedback Message
+            let msg = "";
+            if (action === 'approve') {
+                const adminName = adminSelected.options[adminSelected.selectedIndex]?.text;
+                msg = `Success! File forwarded to ${adminName}.\n(Student notified)`;
+            } else if (action === 'return') {
+                msg = `Application Returned to Student for Corrections.\nFeedback: "${comments}"`;
+            } else {
+                msg = `Application Rejected (Denied).\nReason: "${comments}"`;
+            }
+
+            alert(msg);
+        }
+    }
+
+    function logout() {
+        if(confirm('Are you sure you want to logout?')) {
+            window.location.href = 'index.html';
+        }
+    }
+    async function loadFromServer(){
+  const d = await fetch("/documents").then(r=>r.json());
+
+  applications = d
+    .filter(x=>x.status==="submitted")
+    .map(x=>({
+      id: x.id,
+      student: "Student",
+      studentId: "S001",
+      title: x.name,
+      type: "Uploaded PDF",
+      date: new Date().toISOString().split('T')[0],
+      status: "Pending Review"
+    }));
+
+  renderQueue();
+}
+
+// Override submitReview to use backend
+async function submitReview(){
+  const action = document.querySelector('input[name="action"]:checked')?.value;
+
+  if(!action){
+    alert("Select action");
+    return;
+  }
+
+  if(action==="approve"){
+    await fetch("/forward/"+selectedAppId,{method:"POST"});
+  }
+
+  if(action==="reject"){
+    await fetch("/reviewer-reject/"+selectedAppId,{method:"POST"});
+  }
+
+  alert("Processed");
+  closeModal();
+  loadFromServer();
+}
+// Override openModal for backend docs
+function openModal(id){
+  selectedAppId = id;
+
+  const app = applications.find(a=>a.id===id);
+  if(!app) return;
+
+  document.getElementById('modal-student').textContent = app.student;
+  document.getElementById('modal-id').textContent = `ID: ${app.studentId}`;
+  document.getElementById('modal-avatar').textContent = "ST";
+  document.getElementById('modal-doc-title').textContent = app.title;
+  document.getElementById('feedback-recipient').textContent = app.student;
+
+  // reset
+  document.querySelectorAll('input[name="action"]').forEach(el=>el.checked=false);
+  document.getElementById('modal-comments').value="";
+  document.getElementById('admin-selection-container').classList.add('hidden');
+  document.getElementById('required-star').classList.add('hidden');
+
+  document.getElementById('review-modal').classList.remove('hidden');
+}
+
+
+
+
+    // Initialize
+    loadFromServer();
+</script>
+</body>
+</html>

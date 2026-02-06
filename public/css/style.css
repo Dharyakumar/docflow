@@ -1,0 +1,30 @@
+body{
+ font-family:Arial;
+ background:#f2f2f2;
+ text-align:center;
+ padding-top:50px;
+}
+
+.box{
+ background:white;
+ width:300px;
+ margin:auto;
+ padding:20px;
+ border-radius:8px;
+ box-shadow:0 0 10px #ccc;
+}
+
+button{
+ padding:10px;
+ margin:5px;
+}
+
+table{
+ margin:auto;
+ border-collapse:collapse;
+}
+
+td,th{
+ border:1px solid #ccc;
+ padding:10px;
+}
