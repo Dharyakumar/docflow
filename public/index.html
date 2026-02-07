@@ -262,12 +262,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                                <input type="text" required placeholder="John Doe"
+                                <input id="signup-name" type="text" required placeholder="John Doe"
                                        class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                <input type="email" required placeholder="john@uni.edu"
+                                <input id="signup-email" type="email" required placeholder="john@uni.edu"
                                        class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             </div>
                         </div>
@@ -295,7 +295,7 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fa-solid fa-lock text-gray-400"></i>
                                 </div>
-                                <input type="password" required placeholder="Min. 8 characters"
+                                <input id="signup-password" type="password" required placeholder="Min. 8 characters"
                                        class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             </div>
                         </div>
@@ -432,64 +432,71 @@
     }
 
     // Handle Login Submission
-   async function handleLogin(event){
- event.preventDefault();
+async function handleLogin(event) {
+  event.preventDefault();
 
- const id=document.getElementById("loginId").value;
- const password=document.querySelector("#login-view input[type=password]").value;
+  const email = document.getElementById("loginId").value;
+  const password = document.querySelector("#login-view input[type=password]").value;
 
- const res=await fetch("/login",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({id,password})
- });
+  if (!currentContext) {
+    alert("Please select a role first");
+    return;
+  }
 
- const data=await res.json();
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      password,
+      role: currentContext
+    })
+  });
 
- if(!data.success){
-  alert("Invalid login");
-  return;
- }
+  const data = await res.json();
 
- window.location.href=data.role+".html";
+  if (!data.success) {
+    alert(data.message || "Invalid login");
+    return;
+  }
+
+  // redirect by role
+  window.location.href = `${data.role}.html`;
 }
- 
+
 
     // Handle Forgot Password
- async function handleSignupSubmit(event){
- event.preventDefault();
+async function handleSignupSubmit(event) {
+  event.preventDefault();
 
- const role=document.getElementById("signup-role").value;
- const email=document.querySelector('#signup-view input[type=email]').value;
- const password=document.querySelector('#signup-view input[type=password]').value;
+  const name = document.getElementById("signup-name").value;
+  const email = document.getElementById("signup-email").value;
+  const password = document.getElementById("signup-password").value;
+  const role = document.getElementById("signup-role").value;
 
- if(!role){
-  alert("Select role");
-  return;
- }
+  if (!name || !email || !password || !role) {
+    alert("All fields are required");
+    return;
+  }
 
- const res=await fetch("/signup",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({
-   id:email,
-   password,
-   role
-  })
- });
+  const res = await fetch("/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password, role })
+  });
 
- const data=await res.json();
+  const data = await res.json();
 
- if(!data.success){
-  alert(data.message);
-  return;
- }
+  if (!data.success) {
+    alert(data.message);
+    return;
+  }
 
- alert("Account created!");
-
- switchView("login-view");
- document.getElementById("loginId").value=email;
+  alert("Account created successfully!");
+  switchView("login-view");
+  document.getElementById("loginId").value = email;
 }
+
  
 </script>
 </body>
