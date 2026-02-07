@@ -1,23 +1,34 @@
 const mongoose = require("mongoose");
 
 const DocumentSchema = new mongoose.Schema({
-  owner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
   name: String,
   filePath: String,
 
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+
   status: {
     type: String,
-    enum: ["submitted", "forwarded", "approved", "rejected", "returned"],
+    enum: [
+      "submitted",
+      "forwarded",
+      "reviewer_returned",
+      "reviewer_approved",
+      "admin_approved",
+      "admin_rejected"
+    ],
     default: "submitted"
   },
 
-  comment: String,
-  commentBy: {
-    type: String,
-    enum: ["reviewer", "admin"]
+  reviewerComment: String,
+  adminComment: String,
+
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
   },
 
   createdAt: {

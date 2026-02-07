@@ -179,233 +179,151 @@
 
 <script>
     // Mock Data
-    let allDocs = [
-        { id: 1, student: "Alex Student (S001)", title: "Merit Scholarship 2025", type: "Scholarship", date: "2023-10-25", status: "Pending Admin" },
-        { id: 2, student: "Maria Garcia (S045)", title: "Internship NOC", type: "Internship", date: "2023-10-24", status: "Pending Reviewer" },
-        { id: 3, student: "John Doe (S012)", title: "Admission Form", type: "Admission", date: "2023-10-20", status: "Approved" },
-        { id: 4, student: "Sarah Smith (S099)", title: "Grade Correction", type: "Grade", date: "2023-10-26", status: "Pending Admin" },
-        { id: 5, student: "Mike Ross (S022)", title: "Library Due Waiver", type: "Administrative", date: "2023-10-18", status: "Rejected" }
-    ];
 
-    let currentFilter = 'all';
-    let selectedDocId = null;
-
-    // Stats Calculation
-    function updateStats() {
-        document.getElementById('stat-incoming').textContent = allDocs.filter(d => d.status === 'Pending Admin').length;
-        document.getElementById('stat-reviewer').textContent = allDocs.filter(d => d.status === 'Pending Reviewer').length;
-        document.getElementById('stat-completed').textContent = allDocs.filter(d => ['Approved', 'Rejected'].includes(d.status)).length;
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('admin-table-body');
-        tbody.innerHTML = '';
-        updateStats();
-
-        const filteredDocs = currentFilter === 'all'
-            ? allDocs
-            : allDocs.filter(d => d.status === 'Pending Admin');
-
-        filteredDocs.forEach(doc => {
-            // Determine Badge Color
-            let badgeClass = "bg-gray-100 text-gray-800";
-            if(doc.status === 'Pending Admin') badgeClass = "bg-yellow-100 text-yellow-800";
-            if(doc.status === 'Pending Reviewer') badgeClass = "bg-blue-100 text-blue-800";
-            if(doc.status === 'Approved') badgeClass = "bg-green-100 text-green-800";
-            if(doc.status === 'Rejected') badgeClass = "bg-red-100 text-red-800";
-
-            const isActionable = doc.status === 'Pending Admin';
-
-            const row = `
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-gray-900">${doc.student}</td>
-                        <td class="px-6 py-4 text-gray-500">${doc.title}</td>
-                        <td class="px-6 py-4 text-gray-500">${doc.date}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-medium border border-opacity-20 ${badgeClass}">
-                                ${doc.status}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            ${isActionable ? `
-                                <button onclick="openModal('${doc.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded border border-indigo-200 hover:bg-indigo-100 transition-colors">
-                                    Process
-                                </button>
-                            ` : `
-                                <span class="text-xs text-gray-400 italic">No Actions</span>
-                            `}
-                        </td>
-                    </tr>
-                `;
-            tbody.innerHTML += row;
-        });
-    }
-
-    function filterTable(filter) {
-        currentFilter = filter;
-        // Toggle active styles
-        const btnAll = document.getElementById('filter-all');
-        const btnPending = document.getElementById('filter-pending');
-
-        if (filter === 'all') {
-            btnAll.classList.add('bg-purple-50', 'border-purple-500', 'text-purple-700');
-            btnPending.classList.remove('bg-purple-50', 'border-purple-500', 'text-purple-700');
-        } else {
-            btnPending.classList.add('bg-purple-50', 'border-purple-500', 'text-purple-700');
-            btnAll.classList.remove('bg-purple-50', 'border-purple-500', 'text-purple-700');
-        }
-
-        renderTable();
-    }
-
-    function openModal(id) {
-        selectedDocId = id;
-        const doc = allDocs.find(d => d.id === id);
-        document.getElementById('modal-title').textContent = doc.title;
-        document.getElementById('modal-student').textContent = `Student: ${doc.student}`;
-
-        // Reset UI
-        document.getElementById('feedback-area').classList.add('hidden');
-        document.getElementById('admin-comment').value = '';
-
-        // Show Action Buttons
-        document.getElementById('btn-reject-trigger').classList.remove('hidden');
-
-        document.getElementById('admin-modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-        document.getElementById('admin-modal').classList.add('hidden');
-        selectedDocId = null;
-    }
-
-    // Mock PDF Viewer
-    function viewPDF() {
-        const doc = allDocs.find(d => d.id === selectedDocId);
-        if(doc) {
-            // In a real app, this would open the actual file URL
-            alert(`Opening PDF for ${doc.title}...\n(This is a mock viewer)`);
-        }
-    }
-
-    function processAction(action) {
-        if (action === 'forward') {
-            const doc = allDocs.find(d => d.id === selectedDocId);
-            doc.status = 'Pending Reviewer';
-            alert(`Successfully Forwarded "${doc.title}" to Reviewer.`);
-            closeModal();
-            renderTable();
-        } else if (action === 'reject') {
-            // Hide the trigger button to focus on feedback
-            document.getElementById('btn-reject-trigger').classList.add('hidden');
-            // Show comment box for rejection
-            document.getElementById('feedback-area').classList.remove('hidden');
-        }
-    }
-
-    function cancelReject() {
-        document.getElementById('feedback-area').classList.add('hidden');
-        document.getElementById('btn-reject-trigger').classList.remove('hidden');
-    }
-
-    function confirmReject() {
-        const comment = document.getElementById('admin-comment').value.trim();
-        if (!comment) {
-            alert("Feedback is MANDATORY for rejection. Please explain why.");
-            return;
-        }
-        const doc = allDocs.find(d => d.id === selectedDocId);
-        doc.status = 'Rejected';
-
-        alert(`Application Rejected.\nFeedback Sent: "${comment}"`);
-
-        closeModal();
-        renderTable();
-    }
-
-    function logout() {
-        if(confirm('Are you sure you want to logout?')) {
-            window.location.href = 'index.html';
-        }
-    }
 
     // Initialize with default filter active style
     filterTable('all');
 
     // ===== BACKEND CONNECTION OVERRIDE =====
 
-async function loadFromServer(){
- const d = await fetch("/documents").then(r=>r.json());
 
- allDocs = d
-   .filter(x=>x.status==="forwarded")
-   .map(x=>({
-     id: x.id,
-     student: "Student (S001)",
-     title: x.name,
-     type: "Uploaded",
-     date: new Date().toISOString().split('T')[0],
-     status: "Pending Admin"
-   }));
+/* ===============================
+   ADMIN BACKEND CONNECTION
+   (UI UNCHANGED)
+================================ */
 
- renderTable();
+let allDocs = [];
+let selectedDocId = null;
+
+/* ---------- LOAD DOCUMENTS ---------- */
+async function loadFromServer() {
+  const docs = await fetch("/documents").then(r => r.json());
+
+  allDocs = docs
+    .filter(d => d.status === "reviewer_approved")
+    .map(d => ({
+      id: d._id,
+      student: "Student",
+      title: d.filename,          // display
+      filePath: d.filePath,       // ✅ ADD THIS
+      date: new Date(d.createdAt).toLocaleDateString(),
+      status: "Pending Admin"
+    }));
+
+  renderTable();
+}
+function renderTable() {
+  const tbody = document.getElementById("admin-table-body");
+  tbody.innerHTML = "";
+
+  if (allDocs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="px-6 py-6 text-center text-gray-400">
+          No documents pending admin approval
+        </td>
+      </tr>`;
+    return;
+  }
+
+  allDocs.forEach(doc => {
+    const row = `
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 font-medium text-gray-900">${doc.student}</td>
+        <td class="px-6 py-4 text-gray-500">${doc.title}</td>
+        <td class="px-6 py-4 text-gray-500">${doc.date}</td>
+        <td class="px-6 py-4">
+          <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            ${doc.status}
+          </span>
+        </td>
+        <td class="px-6 py-4 text-center">
+          <button onclick="openModal('${doc.id}')"
+            class="text-indigo-600 hover:text-indigo-900 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded border border-indigo-200">
+            Process
+          </button>
+        </td>
+      </tr>`;
+    tbody.insertAdjacentHTML("beforeend", row);
+  });
 }
 
-// Override approve/reject
 
-function processAction(action){
- if(action==="forward"){
-   approveDoc();
- }
 
- if(action==="reject"){
-   document.getElementById('feedback-area').classList.remove('hidden');
- }
+
+/* ---------- OPEN MODAL ---------- */
+function openModal(id) {
+  selectedDocId = id;
+  const doc = allDocs.find(d => d.id === id);
+
+  document.getElementById("modal-title").textContent = doc.title;
+  document.getElementById("modal-student").textContent = doc.student;
+
+  document.getElementById("feedback-area").classList.add("hidden");
+  document.getElementById("admin-comment").value = "";
+
+  document.getElementById("admin-modal").classList.remove("hidden");
 }
 
-async function approveDoc(){
- await fetch("/approve/"+selectedDocId,{method:"POST"});
- alert("Approved");
- closeModal();
- loadFromServer();
+/* ---------- PROCESS ACTION ---------- */
+function processAction(action) {
+  if (action === "forward") {
+    approveDoc();
+  }
+
+  if (action === "reject") {
+    document.getElementById("feedback-area").classList.remove("hidden");
+  }
 }
 
-function confirmReject(){
- rejectDoc();
+/* ---------- APPROVE ---------- */
+async function approveDoc() {
+  await fetch(`/admin/approve/${selectedDocId}`, {
+    method: "POST"
+  });
+
+  alert("Approved & sent to student");
+  closeModal();
+  loadFromServer();
 }
 
-async function rejectDoc(){
- const comment=document.getElementById("admin-comment").value.trim();
+/* ---------- REJECT ---------- */
+function confirmReject() {
+  rejectDoc();
+}
 
- if(!comment){
-   alert("Please enter rejection reason");
-   return;
- }
+async function rejectDoc() {
+  const comment = document.getElementById("admin-comment").value.trim();
 
- await fetch("/reject/"+selectedDocId,{
-   method:"POST",
-   headers:{ "Content-Type":"application/json"},
-   body: JSON.stringify({comment})
- });
+  if (!comment) {
+    alert("Please enter rejection reason");
+    return;
+  }
 
- alert("Rejected & sent to student");
- closeModal();
- loadFromServer();
+  await fetch(`/admin/reject/${selectedDocId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ comment })
+  });
+
+  alert("Rejected & feedback sent to student");
+  closeModal();
+  loadFromServer();
+}
+
+/* ---------- PDF VIEW ---------- */
+function viewPDF() {
+  const doc = allDocs.find(d => d.id === selectedDocId);
+  if (!doc) {
+    alert("File not found");
+    return;
+  }
+
+  window.open("/" + doc.filePath, "_blank");   // ✅ CORRECT
 }
 
 
-// Override modal opener for UUID
-function openModal(id){
- selectedDocId=id;
-
- const doc=allDocs.find(x=>x.id===id);
- document.getElementById('modal-title').textContent=doc.title;
- document.getElementById('modal-student').textContent=doc.student;
-
- document.getElementById('admin-modal').classList.remove('hidden');
-}
-
-// Load real docs
+/* ---------- INIT ---------- */
 loadFromServer();
 
 </script>

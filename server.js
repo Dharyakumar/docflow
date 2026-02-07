@@ -32,13 +32,13 @@ app.use(
 );
 
 app.use(express.static("public"));
+app.use("/uploads", express.static("uploads"));
+
 
 /*************************************************
  * UPLOADS FOLDER
  *************************************************/
-if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
-}
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
 /*************************************************
  * MONGODB CONNECTION
@@ -55,15 +55,30 @@ const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
-  role: String // student | reviewer | admin
+  role: { type: String, enum: ["student", "reviewer", "admin"] }
 });
 
 const DocumentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  name: String,
-  status: String, // submitted | forwarded | returned | approved
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  filename: String,
+  filePath: String,
+  status: {
+    type: String,
+    enum: [
+      "submitted",
+      "reviewer_approved",
+      "reviewer_rejected",
+      "admin_approved",
+      "admin_rejected"
+    ],
+    default: "submitted"
+  },
   comment: String,
-  commentBy: String, // reviewer | admin
+  commentBy: String,
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -81,13 +96,12 @@ function requireLogin(req, res, next) {
 }
 
 /*************************************************
- * FILE UPLOAD (MULTER)
+ * FILE UPLOAD
  *************************************************/
 const storage = multer.diskStorage({
   destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + "-" + file.originalname)
 });
 const upload = multer({ storage });
 
@@ -102,91 +116,74 @@ app.get("/", (req, res) => {
 
 /* ---------- SIGNUP ---------- */
 app.post("/signup", async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password || !role)
+    return res.json({ success: false });
 
-    if (!name || !email || !password || !role) {
-      return res.json({ success: false, message: "Missing fields" });
-    }
+  const exists = await User.findOne({ email });
+  if (exists) return res.json({ success: false });
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.json({ success: false, message: "User exists" });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    await User.create({
-      name,
-      email,
-      password: hashed,
-      role
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
-  }
-});
-
-/* ---------- LOGIN ---------- */
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password, role } = req.body;
-
-    const user = await User.findOne({ email, role });
-    if (!user) return res.json({ success: false });
-
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.json({ success: false });
-
-    req.session.user = {
-      id: user._id,
-      role: user.role,
-      email: user.email,
-      name: user.name
-    };
-
-    res.json({ success: true, role: user.role });
-  } catch (err) {
-    res.status(500).json({ success: false });
-  }
-});
-
-/* ---------- LOGOUT ---------- */
-app.post("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
-});
-
-/* ---------- STUDENT UPLOAD ---------- */
-app.post("/upload", requireLogin, upload.single("file"), async (req, res) => {
-  if (req.session.user.role !== "student") {
-    return res.status(403).json({ success: false });
-  }
-
-  await Document.create({
-    user: req.session.user.id,
-    name: req.file.originalname,
-    status: "submitted"
-  });
+  const hashed = await bcrypt.hash(password, 10);
+  await User.create({ name, email, password: hashed, role });
 
   res.json({ success: true });
 });
 
+/* ---------- LOGIN ---------- */
+app.post("/login", async (req, res) => {
+  const { email, password, role } = req.body;
+
+  const user = await User.findOne({ email, role });
+  if (!user) return res.json({ success: false });
+
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) return res.json({ success: false });
+
+  req.session.user = {
+    id: user._id,
+    role: user.role,
+    email: user.email,
+    name: user.name
+  };
+
+  res.json({ success: true, role: user.role });
+});
+
+/* ---------- STUDENT UPLOAD ---------- */
+app.post("/upload", requireLogin, upload.single("file"), async (req, res) => {
+  if (req.session.user.role !== "student")
+    return res.sendStatus(403);
+
+  const doc = await Document.create({
+    studentId: req.session.user.id,
+    filename: req.file.originalname,
+    filePath: req.file.path
+  });
+
+  res.json({ success: true, doc });
+});
+
 /* ---------- GET DOCUMENTS ---------- */
 app.get("/documents", requireLogin, async (req, res) => {
-  const role = req.session.user.role;
+  const { role, id } = req.session.user;
+  let docs = [];
 
-  let docs;
   if (role === "student") {
-    docs = await Document.find({ user: req.session.user.id });
-  } else if (role === "reviewer") {
-    docs = await Document.find({ status: "submitted" });
-  } else {
-    docs = await Document.find({ status: "forwarded" });
+    // Student sees ALL their docs + feedback
+    docs = await Document.find({ studentId: id })
+      .sort({ createdAt: -1 });
+  }
+
+  if (role === "reviewer") {
+    // Reviewer sees only fresh submissions
+    docs = await Document.find({ status: "submitted" })
+      .sort({ createdAt: -1 });
+  }
+
+  if (role === "admin") {
+    // Admin sees only reviewer-approved
+    docs = await Document.find({ status: "forwarded" })
+      .sort({ createdAt: -1 });
   }
 
   res.json(docs);
@@ -194,7 +191,9 @@ app.get("/documents", requireLogin, async (req, res) => {
 
 /* ---------- REVIEWER ACTIONS ---------- */
 app.post("/forward/:id", requireLogin, async (req, res) => {
-  if (req.session.user.role !== "reviewer") return res.sendStatus(403);
+  if (req.session.user.role !== "reviewer") {
+    return res.sendStatus(403);
+  }
 
   await Document.findByIdAndUpdate(req.params.id, {
     status: "forwarded",
@@ -205,11 +204,25 @@ app.post("/forward/:id", requireLogin, async (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/reviewer-reject/:id", requireLogin, async (req, res) => {
-  if (req.session.user.role !== "reviewer") return res.sendStatus(403);
+app.post("/reviewer/approve/:id", requireLogin, async (req, res) => {
+  if (req.session.user.role !== "reviewer")
+    return res.sendStatus(403);
 
   await Document.findByIdAndUpdate(req.params.id, {
-    status: "returned",
+    status: "reviewer_approved",
+    comment: null,
+    commentBy: null
+  });
+
+  res.json({ success: true });
+});
+
+app.post("/reviewer/reject/:id", requireLogin, async (req, res) => {
+  if (req.session.user.role !== "reviewer")
+    return res.sendStatus(403);
+
+  await Document.findByIdAndUpdate(req.params.id, {
+    status: "reviewer_rejected",
     comment: req.body.comment,
     commentBy: "reviewer"
   });
@@ -218,72 +231,31 @@ app.post("/reviewer-reject/:id", requireLogin, async (req, res) => {
 });
 
 /* ---------- ADMIN ACTIONS ---------- */
-app.post("/approve/:id", requireLogin, async (req, res) => {
-  if (req.session.user.role !== "admin") return res.sendStatus(403);
+app.post("/admin/approve/:id", requireLogin, async (req, res) => {
+  if (req.session.user.role !== "admin")
+    return res.sendStatus(403);
 
   await Document.findByIdAndUpdate(req.params.id, {
-    status: "approved"
+    status: "admin_approved",
+    comment: null,
+    commentBy: null
   });
 
   res.json({ success: true });
 });
 
-app.post("/reject/:id", requireLogin, async (req, res) => {
-  if (req.session.user.role !== "admin") return res.sendStatus(403);
+app.post("/admin/reject/:id", requireLogin, async (req, res) => {
+  if (req.session.user.role !== "admin")
+    return res.sendStatus(403);
 
   await Document.findByIdAndUpdate(req.params.id, {
-    status: "returned",
+    status: "admin_rejected",
     comment: req.body.comment,
     commentBy: "admin"
   });
 
   res.json({ success: true });
 });
-
-// ===== TEMP USER CREATION (DELETE LATER) =====
-app.get("/signup-test", async (req, res) => {
-  try {
-    const users = [
-      {
-        name: "Student One",
-        email: "student@test.com",
-        password: "1234",
-        role: "student"
-      },
-      {
-        name: "Reviewer One",
-        email: "reviewer@test.com",
-        password: "1234",
-        role: "reviewer"
-      },
-      {
-        name: "Admin One",
-        email: "admin@test.com",
-        password: "1234",
-        role: "admin"
-      }
-    ];
-
-    for (let u of users) {
-      const exists = await User.findOne({ email: u.email });
-      if (!exists) {
-        const hashed = await bcrypt.hash(u.password, 10);
-        await User.create({
-          name: u.name,
-          email: u.email,
-          password: hashed,
-          role: u.role
-        });
-      }
-    }
-
-    res.send("✅ Test users created. You can login now.");
-  } catch (e) {
-    console.error(e);
-    res.status(500).send("Error creating users");
-  }
-});
-
 
 /*************************************************
  * START SERVER

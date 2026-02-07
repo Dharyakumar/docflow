@@ -601,7 +601,7 @@
   applications = d
     .filter(x=>x.status==="submitted")
     .map(x=>({
-      id: x.id,
+      id: x._id,
       student: "Student",
       studentId: "S001",
       title: x.name,
@@ -628,22 +628,26 @@ async function submitReview(){
     return;
   }
 
-  if(action==="approve"){
-    await fetch("/forward/"+selectedAppId,{method:"POST"});
+  if (action === "approve") {
+  await fetch("reviewer/approve/" + selectedAppId, {
+    method: "POST"
+  });
   }
 
-  if(action==="return" || action==="reject"){
-    await fetch("/reviewer-reject/"+selectedAppId,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json"},
-      body: JSON.stringify({comment})
+
+  if(action === "return" || action === "reject"){
+    await fetch("/reviewer-reject/" + selectedAppId, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment })
     });
   }
 
-  alert("Processed");
+  alert("Processed successfully");
   closeModal();
   loadFromServer();
 }
+
 
 // Override openModal for backend docs
 function openModal(id){
