@@ -182,7 +182,7 @@ app.get("/documents", requireLogin, async (req, res) => {
 
   if (role === "admin") {
     // Admin sees only reviewer-approved
-    docs = await Document.find({ status: "forwarded" })
+    docs = await Document.find({ status: "reviewer_approved" })
       .sort({ createdAt: -1 });
   }
 
@@ -196,7 +196,7 @@ app.post("/forward/:id", requireLogin, async (req, res) => {
   }
 
   await Document.findByIdAndUpdate(req.params.id, {
-    status: "forwarded",
+    status: "reviewer_approved",
     comment: null,
     commentBy: null
   });

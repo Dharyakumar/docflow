@@ -629,7 +629,7 @@ async function submitReview(){
   }
 
   if (action === "approve") {
-  await fetch("reviewer/approve/" + selectedAppId, {
+  await fetch("/reviewer/approve/" + selectedAppId, {
     method: "POST"
   });
   }
@@ -670,7 +670,6 @@ function openModal(id){
 
   document.getElementById('review-modal').classList.remove('hidden');
 }
-
 
 
 

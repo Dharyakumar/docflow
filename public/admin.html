@@ -143,26 +143,26 @@
                 <label class="block text-sm font-medium text-gray-700">Workflow Action</label>
 
                 <!-- Approve Button -->
-                <button onclick="processAction('forward')" class="w-full group flex items-center justify-between p-4 border rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
+                <button onclick="processAction('approve')" class="w-full group flex items-center justify-between p-4 border rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left">
                     <div>
-                        <span class="block font-semibold text-gray-800 group-hover:text-blue-700">Approve & Forward</span>
-                        <span class="text-xs text-gray-500">Route to Department Reviewer</span>
+                        <span class="block font-semibold text-gray-800 group-hover:text-green-700">Approve Application</span>
+                        <span class="text-xs text-gray-500">Complete and notify student</span>
                     </div>
-                    <i class="fa-solid fa-arrow-right text-gray-300 group-hover:text-blue-500 text-xl"></i>
+                    <i class="fa-solid fa-circle-check text-gray-300 group-hover:text-green-500 text-xl"></i>
                 </button>
 
                 <!-- Reject Button -->
                 <button onclick="processAction('reject')" class="w-full group flex items-center justify-between p-4 border rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left" id="btn-reject-trigger">
                     <div>
                         <span class="block font-semibold text-gray-800 group-hover:text-red-700">Reject Application</span>
-                        <span class="text-xs text-gray-500">Terminate process immediately</span>
+                        <span class="text-xs text-gray-500">Send back with feedback</span>
                     </div>
                     <i class="fa-solid fa-ban text-gray-300 group-hover:text-red-500 text-xl"></i>
                 </button>
             </div>
 
             <!-- Feedback Area (Shows on Reject) -->
-            <div id="feedback-area" class="hidden mt-4 animate-fade-in">
+            <div id="feedback-area" class="hidden mt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Rejection Reason <span class="text-red-500">*</span>
                 </label>
@@ -178,40 +178,56 @@
 </div>
 
 <script>
-    // Mock Data
-
-
-    // Initialize with default filter active style
-    filterTable('all');
-
-    // ===== BACKEND CONNECTION OVERRIDE =====
-
-
-/* ===============================
-   ADMIN BACKEND CONNECTION
-   (UI UNCHANGED)
-================================ */
-
 let allDocs = [];
 let selectedDocId = null;
 
 /* ---------- LOAD DOCUMENTS ---------- */
 async function loadFromServer() {
-  const docs = await fetch("/documents").then(r => r.json());
+  try {
+    const response = await fetch("/documents", {credentials: "include"});
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        alert("Session expired. Please login again.");
+        window.location.href = "/index.html";
+        return;
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const docs = await response.json();
 
-  allDocs = docs
-    .filter(d => d.status === "reviewer_approved")
-    .map(d => ({
-      id: d._id,
-      student: "Student",
-      title: d.filename,          // display
-      filePath: d.filePath,       // ✅ ADD THIS
-      date: new Date(d.createdAt).toLocaleDateString(),
-      status: "Pending Admin"
-    }));
+    allDocs = docs
+      .filter(d => d.status === "reviewer_approved")   
+      .map(d => ({
+        id: d._id,
+        student: "Student",
+        title: d.filename,
+        filePath: d.filePath,
+        date: new Date(d.createdAt).toLocaleDateString(),
+        status: "Pending Admin"
+      }));
 
-  renderTable();
+    updateStats(docs);
+    renderTable();
+  } catch (error) {
+    console.error("Error loading documents:", error);
+    alert("Error loading documents. Please try again.");
+  }
 }
+
+/* ---------- UPDATE STATS ---------- */
+function updateStats(docs) {
+  const pending = docs.filter(d => d.status === "reviewer_approved").length;
+  const withReviewer = docs.filter(d => d.status === "submitted").length;
+  const completed = docs.filter(d => d.status === "admin_approved").length;
+  
+  document.getElementById("stat-incoming").textContent = pending;
+  document.getElementById("stat-reviewer").textContent = withReviewer;
+  document.getElementById("stat-completed").textContent = completed;
+}
+
+/* ---------- RENDER TABLE ---------- */
 function renderTable() {
   const tbody = document.getElementById("admin-table-body");
   tbody.innerHTML = "";
@@ -248,8 +264,20 @@ function renderTable() {
   });
 }
 
-
-
+/* ---------- FILTER TABLE ---------- */
+function filterTable(filter) {
+  document.querySelectorAll('[id^="filter-"]').forEach(btn => {
+    btn.classList.remove('bg-purple-600', 'text-white', 'active-filter');
+    btn.classList.add('bg-white', 'text-gray-700');
+  });
+  
+  const activeBtn = document.getElementById(`filter-${filter}`);
+  activeBtn.classList.remove('bg-white', 'text-gray-700');
+  activeBtn.classList.add('bg-purple-600', 'text-white', 'active-filter');
+  
+  // For now, both filters show the same (only reviewer_approved docs)
+  renderTable();
+}
 
 /* ---------- OPEN MODAL ---------- */
 function openModal(id) {
@@ -265,9 +293,14 @@ function openModal(id) {
   document.getElementById("admin-modal").classList.remove("hidden");
 }
 
+function closeModal() {
+  document.getElementById("admin-modal").classList.add("hidden");
+  selectedDocId = null;
+}
+
 /* ---------- PROCESS ACTION ---------- */
 function processAction(action) {
-  if (action === "forward") {
+  if (action === "approve") {
     approveDoc();
   }
 
@@ -278,16 +311,31 @@ function processAction(action) {
 
 /* ---------- APPROVE ---------- */
 async function approveDoc() {
-  await fetch(`/admin/approve/${selectedDocId}`, {
-    method: "POST"
-  });
+  try {
+    const response = await fetch(`/admin/approve/${selectedDocId}`, {
+      method: "POST",
+      credentials: "include"
+    });
 
-  alert("Approved & sent to student");
-  closeModal();
-  loadFromServer();
+    if (!response.ok) {
+      throw new Error("Approval failed");
+    }
+
+    alert("✅ Application approved successfully!");
+    closeModal();
+    loadFromServer();
+  } catch (error) {
+    console.error("Error approving document:", error);
+    alert("Error approving document. Please try again.");
+  }
 }
 
 /* ---------- REJECT ---------- */
+function cancelReject() {
+  document.getElementById("feedback-area").classList.add("hidden");
+  document.getElementById("admin-comment").value = "";
+}
+
 function confirmReject() {
   rejectDoc();
 }
@@ -300,35 +348,49 @@ async function rejectDoc() {
     return;
   }
 
-  await fetch(`/admin/reject/${selectedDocId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ comment })
-  });
+  try {
+    const response = await fetch(`/admin/reject/${selectedDocId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ comment })
+    });
 
-  alert("Rejected & feedback sent to student");
-  closeModal();
-  loadFromServer();
+    if (!response.ok) {
+      throw new Error("Rejection failed");
+    }
+
+    alert("❌ Application rejected. Feedback sent to student.");
+    closeModal();
+    loadFromServer();
+  } catch (error) {
+    console.error("Error rejecting document:", error);
+    alert("Error rejecting document. Please try again.");
+  }
 }
 
 /* ---------- PDF VIEW ---------- */
 function viewPDF() {
   const doc = allDocs.find(d => d.id === selectedDocId);
-  if (!doc) {
+  if (!doc || !doc.filePath) {
     alert("File not found");
     return;
   }
 
-  window.open("/" + doc.filePath, "_blank");   // ✅ CORRECT
+  window.open("/" + doc.filePath, "_blank");
 }
 
+/* ---------- LOGOUT ---------- */
+function logout() {
+  if(confirm('Are you sure you want to logout?')) {
+    window.location.href = '/index.html';
+  }
+}
 
 /* ---------- INIT ---------- */
+filterTable('all');
 loadFromServer();
-
 </script>
-
-
 
 </body>
 </html>
