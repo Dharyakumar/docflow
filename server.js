@@ -32,7 +32,8 @@ app.use(
 );
 
 app.use(express.static("public"));
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 
 /*************************************************
