@@ -627,32 +627,33 @@ async function loadFromServer(){
 
 
 // Override submitReview to use backend
-async function submitReview(){
+async function submitReview() {
   const action = document.querySelector('input[name="action"]:checked')?.value;
   const comment = document.getElementById("modal-comments").value.trim();
 
-  if(!action){
-    alert("Select action");
+  if (!action) {
+    alert("Select an action");
     return;
   }
 
-  if((action==="return" || action==="reject") && !comment){
-    alert("Feedback required");
-    return;
-  }
+  // RETURN or REJECT (same backend logic)
+  if ((action === "return" || action === "reject")) {
+    if (!comment) {
+      alert("Feedback is required");
+      return;
+    }
 
-  if (action === "approve") {
-  await fetch("/reviewer/approve/" + selectedAppId, {
-    method: "POST"
-  });
-  }
-
-
-  if(action === "return" || action === "reject"){
-    await fetch("/reviewer-reject/" + selectedAppId, {
+    await fetch(`/reviewer/reject/${selectedAppId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comment })
+    });
+  }
+
+  // APPROVE → send to admin
+  if (action === "approve") {
+    await fetch(`/reviewer/approve/${selectedAppId}`, {
+      method: "POST"
     });
   }
 

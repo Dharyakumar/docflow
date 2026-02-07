@@ -150,6 +150,19 @@ app.post("/login", async (req, res) => {
   res.json({ success: true, role: user.role });
 });
 
+
+// GET LOGGED IN USER PROFILE
+app.get("/profile", requireLogin, (req, res) => {
+    User.findById(req.session.user.id)
+      .select("-password")
+      .then(user => res.json(user))
+      .catch(err => {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  });
+});
+
+
 /* ---------- STUDENT UPLOAD ---------- */
 app.post("/upload", requireLogin, upload.single("file"), async (req, res) => {
   if (req.session.user.role !== "student")
